@@ -136,6 +136,17 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
 ###       years paid in social security, Household members in 2002 (NMIEM), Number of "house mates"/partner (CON/CONPARHIJ), 
 ###       TENEN, car ownership (VEHIC), CSE - socioeconomic situation in 2002, Room number (NHAB)
   
+  ## -------------- ##
+  ## Event variable ##
+  ## -------------- ##
+  
+  retire <- retire %>% mutate(exit = factor(ifelse(event==1,"dead","censored")))
+  
+  ev.tbl <- table(retire$exit)
+  round(prop.table(ev.tbl),digits = 2)
+  
+  # 2776 deaths occured which means that 2% of the observed individual died within the observation period
+  
   ## ---- ##
   ## Sex  ##
   ## ---- ##  
@@ -159,9 +170,9 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   ## ---------------------------- ##
   ## Estado civil - civil status  ##
   ## ---------------------------- ##
-  retire %>% count(ECIVIL) %>% 
+  retire %>% count(ECIVIL)
   # assuming the zeros mean that the civil status was unknown (missing), the should be deleted (to be determent)
-    filter(ECIVIL>0)
+  retire <- retire %>% filter(ECIVIL>0)
   # Change the categories
   retire$ECIVIL <- factor(retire$ECIVIL)
   retire$ECIVIL <- revalue(retire$ECIVIL, c("1"="single", "2"="married", "3"="widowed", 
@@ -187,6 +198,13 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
                                             "7"="Secondary Educ.", "8"="Tertiary Educ.", "9"="Tertiary Educ.",
                                             "10"="Tertiary Educ."))
   
+  deg.tbl <- table(retire$ESREAL)
+  round(100*(deg.tbl/sum(deg.tbl)),digits = 2)
+  
+  #      Illiterate      Incomplete   Primary Educ. Secondary Educ.  Tertiary Educ. 
+  #           2.09%          21.71%         29.18%           37.00%         10.02%
+  
+  
   ## -------------------------- ##
   ## Occupation status en 2002  ##
   ## -------------------------- ##
@@ -195,7 +213,10 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   retire$SITP <- factor(retire$SITP)
   retire$SITP <- revalue (retire$SITP, c("1"="Businessmen/Profesional w. empl.", "2"="Businessmen/Profesional w.o. empl.",
                                          "3"="Employee w. indefinite contract", "4"="Employee with temporary contract",
-                                         "5"="Working at home", "6"="Cooperative member", "9"="Not applicable"))
+                                         "5"="Others", "6"="Others", "9"="Not applicable"))
+  
+  occ.tbl <- table(retire$SITP)
+  round(prop.table(occ.tbl,margin = NULL), digits = 2)
   
   
   ## -------------------------- ##
@@ -239,18 +260,65 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   retire <- within(retire, pensize <- relevel(pensize, ref = "500-999 Euro"))
   
   ## ---------------------------- ##
+  ## Entry age to retirement      ##
+  ## ---------------------------- ##
+  retire <- retire %>% mutate(ret.age = retire.y-FNAC)
+  summary(retire$ret.age)
+  
+  #     Min.  1st Qu.  Median    Mean 3rd Qu.    Max. 
+  #    50.00   63.01   65.00   64.31   65.07   93.40
+  
+  ggplot(data=retire, aes(x=ret.age, fill=ESREAL))+
+    geom_histogram(bins=35)
+  
+  ## reshape into a categorical variable (early, in-time, late)
+  retire <- retire %>% mutate(ret.age.c = factor(ifelse(ret.age<64.1,"early retirement",
+                                                        ifelse(ret.age<66,"in time retirement","late retirement"))))
+  
+  ret.time.tbl <- table(retire$ret.age.c)
+  round(prop.table(ret.time.tbl),digits = 2)
+  
+  # early retirement  in time retirement    late retirement 
+  #             0.34                0.58               0.08 
+  
+  
+  ## ---------------------------- ##
   ## Socioeconomic status in 2002 ##
   ## ---------------------------- ##
   
   table(retire$CSE)
   ## too many categories - collapse responsible
   
+  
+  
+  ## ---------------------------- ##
+  ## TENEN - tenent regime        ##
+  ## ---------------------------- ##
+  
+  ## ---------------------------- ##
+  ## NHAB - number of rooms       ##
+  ## ---------------------------- ##
+  
+  
+  ## -------------------------------------------- ##
+  ## VEHIC - number of motor vehicles/cars        ##
+  ## -------------------------------------------- ##
+  
 
-  ####### --------------------------------------------------------------------- #########
+  ####### -------------------------------------------------------------------------------------- #########
 
 ### 1.4 Descriptive Statistics
+  
+  
+  ### --------------------- ###  
+  ### Scanning the data     ###
+  ### Visual intuitive test ###
+  ### --------------------- ###
+  
+  # visualizing event distribution
+  
 
-  table(retire$pensize,retire$conyear)
+  
 
   # visualizing education/pension income
   PENED.plot <- ggplot(retire, aes(x=ret.pen, fill=ESREAL)) +
@@ -265,12 +333,52 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
                   theme_bw()
   
   ### this plot could be interesting for the presentation (highlighting the groups in 4-5 different plots)  
-  # visualizing education/pension years
+  
+ # visualizing education/pension years !!!
   YP.plot <- ggplot(retire, aes(x=contrib.years, y=ret.pen)) +
     geom_point(aes(color = ESREAL))+
     labs(color="")+
     theme_bw()
   
+ # Visualize the pension income by entry age
+  EA.PI.plot <- ggplot(retire, aes(x=contrib.years, y=ret.pen)) +
+                geom_point(aes(color = ret.age.c))+
+                labs(color="")+
+                theme_bw()
   
-  # visualizing event distributions
+############################################################################################
+  
+  ### 1.4.1. Retirement variables in context
+  
+  ps.ra.tbl<- table(retire$pensize,retire$ret.age.c)
+  round(prop.table(ps.ra.tbl,2), digits = 2)         # Column percentage
+  round(prop.table(ps.ra.tbl,1), digits = 2)         # row percentage
+
+  
+  ps.cy.tbl <- table(retire$pensize,retire$conyear)
+  round(prop.table(ps.cy.tbl,2),digits = 2)         # Column percentage
+  
+  
+  ### 1.4.2. Distribution of events (deaths) by the retirement variables
+  
+  # event distribution by sex
+  s.e.tbl <- table(retire$exit,retire$sex)
+  round(prop.table(s.e.tbl), digits = 3)
+
+    retire %>% ggplot(aes(x=sex,fill=exit))+
+    geom_bar(stat = "count")
+  
+  # event distribution by education
+  
+  # event distribution by occupation
+  
+  # event distribution by pension size
+  
+  # event distribution by entry age to retirement and years of contribution
+  
+  ### 1.4.4. Simple statistical tests for the event variable in combination with potential covariates
+  
+  ### 1.4.4. Descriptive tables for men and women
+  
+  
   
