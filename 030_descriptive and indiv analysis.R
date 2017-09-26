@@ -128,6 +128,8 @@
   
   pe.e.tbl <- table(retire$exit,retire$ret.age.c)
   round(prop.table(pe.e.tbl,2), digits = 2)
+  chisq.test(pe.e.tbl)
+  rm(pe.e.tbl)
   # more deaths in early and late retirement
   
   retire %>% ggplot(aes(x=ret.age.c,fill=exit)) +
@@ -175,6 +177,14 @@
   round(prop.table(pen3.e.tbl,2),digits = 2)
   chisq.test(pen3.e.tbl)
   rm(pen3.e.tbl)
+  
+  # Visualization who died by contribution years at what age
+  retire %>% ggplot(aes(x=contrib.years,y=age.exit))+
+    geom_point(aes(color=exit))+ facet_grid(.~ sex)
+  
+  ## For both sexes the deaths are concentrated in the higher ages (logic, with the exeception of a group of men
+  ## dying before 60 - mine and farm workers?) and in the lower contribution years
+  
   
 ### ------------------------------------------------------------------------------------------------- ###   
   

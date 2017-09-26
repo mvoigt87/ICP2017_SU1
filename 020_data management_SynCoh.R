@@ -17,9 +17,11 @@ load("060_ss_cc2002.RData")
 
 ### 0.1 load necessary packages
 library(reshape)
+library(plyr)                   # plyr is not part of the tidyverse package
 library(tidyverse)
 library(survival)
 library(forcats)
+
 
 ### 1.1 Data set for individual analysis - preparation
 
@@ -161,6 +163,17 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   # 93976 deaths occured which translates to 14% of the individuals within the observation period
   # 575795 cases were censored
   
+  ## ---------------- ##
+  ## Age at exit      ##
+  ## ---------------- ##
+  
+  retire <- retire %>% mutate(age.exit = end.date - FNAC)
+  summary(retire$age.exit)
+
+  #     Min.  1st Qu.  Median    Mean  3rd Qu.     Max. 
+  #   56.58    69.00    74.63   75.49    81.46   94.99
+
+  
   ## ---- ##
   ## Sex  ##
   ## ---- ##  
@@ -298,16 +311,20 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
     ## Extract the 40 cases with more than 60 years of contribution (15-75,20-80 cases are highly rare already)
     filter(contrib.years<=60) %>% 
     ## also extract the 22061 cases with zero years of contribution will be excluded
-    filter(contrib.years>0) %>% 
+    filter(contrib.years>0.1) %>% 
     ## create a factor variable
-    mutate(contrib.year.c = factor(ifelse(retire$contrib.years<15,"less than 15 years",
-                                    ifelse(retire$contrib.years<30,"15-29 years",
-                                           ifelse(retire$contrib.years<45,"30-44 years","more than 45 years")))))
-    
-   summary(retire$contrib.years)
-   
-  # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  # 1.0    25.0    35.0    33.2    41.0    60.0 
+    mutate(contrib.years = as.numeric(contrib.years)) %>% 
+    mutate(contrib.y.c = factor(ifelse(contrib.years<15, "less than 15 years",
+                                       ifelse(contrib.years<26, "15-25 years",
+                                              ifelse(contrib.years<41,"26-40 years","more than 40 years")))))
+      
+      
+    summary(retire$contrib.years)
+    table(retire$contrib.y.c)
+   # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   # 1.0    25.0    35.0    33.2    41.0    60.0 
+   #        15-25 years        26-40 years less than 15 years more than 40 years 
+   #             136445             302682              25105             179870 
    
   ## -------------------------- ##
   ## Pension income             ##
@@ -365,6 +382,13 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   #             35.41               56.86               7.74   # in percent (%)
   
   
+  
+  table(retire$age>retire$age.exit)                        # 2894 cases
+  summary(retire$age[retire$age>retire$age.exit])
+  summary(retire$age.exit[retire$age>retire$age.exit])
+  
+  retire <- retire %>% filter(age.exit>age)
+  
   ## ---------------------------- ##
   ## Socioeconomic status in 2002 ##
   ## ---------------------------- ##
@@ -380,10 +404,10 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   t.tbl <- table(retire$TENEN)
   
   ## recoding of categories
-  retire <- retire %>% mutate (TENEN=factor(TENEN)) %>% 
-                                 mutate(revalue (TENEN, c("1"="Own", "2"="Own",
-                                         "3"="Own", "4"="Rent","5"="Other Form", "6"="Other Form")))
-  colnames(retire)[46] <- "HousReg"
+  retire <- retire %>% mutate (TENEN = factor(ifelse( TENEN<=3,"Own",
+                                                      ifelse(TENEN==4, "Rent","Other form"))))
+  cbind(colnames(retire))
+  colnames(retire)[25] <- "HousReg"
   
   t.tbl <- table(retire$HousReg)
   round(100*(prop.table(t.tbl)), digits=2)
@@ -506,7 +530,6 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
     geom_bar(stat = "count")
   rm(p.e.tbl)  
   
-  # event distribution by entry age to retirement and years of contribution
 
   
   #### save data set ready for the analysis
