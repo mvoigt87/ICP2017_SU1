@@ -342,7 +342,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   
   retire$pensize <- factor(ifelse(retire$ret.pen<500,"less than 500 Euro",
                                   ifelse(retire$ret.pen<1000, "500-999 Euro",
-                                         ifelse(retire$ret.pen<2000, "1000-1999 Euro", "more than 2000"))))
+                                         ifelse(retire$ret.pen<2000, "1000-1999 Euro", "more than 2000 Euro"))))
   
   #### Change reference category for later analysis (ref=primary or secondary)
   retire <- within(retire, pensize <- relevel(pensize, ref = "500-999 Euro"))
@@ -536,5 +536,5 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   
   save(retire, file='030_RetirementIND.RData')
   
-  
+  rm()
   
