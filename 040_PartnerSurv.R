@@ -350,6 +350,16 @@ coupl <- inner_join(retire,part2, by="kID")
     round(prop.table(table(pen.coupl$ESREAL,pen.coupl$ESREAL_p),2),digits = 2)
     round(prop.table(table(pen.coupl$EDU,pen.coupl$EDU_p)),digits = 2)
     
+    ## collapse contrib.y
+    pen.coupl <- pen.coupl %>% mutate(con.y = factor(ifelse(contrib.years<20, "less than 20 years",
+                                                          ifelse(contrib.years<40, "20-40 years",
+                                                            "more than 40 years"))))
+    ## and the partners contribution
+    pen.coupl <- pen.coupl %>% mutate(con.y_p = factor(ifelse(contrib.years_p<20, "less than 20 years",
+                                                            ifelse(contrib.years_p<40, "20-40 years",
+                                                                   "more than 40 years"))))
+    
+    
     ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
     
     
@@ -371,9 +381,9 @@ coupl <- inner_join(retire,part2, by="kID")
     ## constantly changed through testing
     cox.p2 <- coxph(Surv(time = age, 
                          time2 = age.exit, 
-                         event=event) ~ hh.in.c + sex + ESREAL + ESREAL_p + contrib.y.c +
-                         contrib.y.c_p + ret.age.c + FNAC + age.diff.c + p.surv +
-                         HousReg + car + hh, data = pen.coupl)
+                         event=event) ~ hh.in.c + sex + EDU + EDU_p + con.y +
+                          con.y_p + ret.age.c  + ret.age.c_p + FNAC + age.diff.c + p.surv +
+                          HousReg + car + hh, data = pen.coupl)
     summary(cox.p2)
     
     
@@ -381,9 +391,9 @@ coupl <- inner_join(retire,part2, by="kID")
     
     ## 2.3.3 stratified model (2 baselines for the two sexes)
     
-    cox.p3 <- coxph(Surv(time = age, time2 = age.exit, event=event) ~ hh.in.c + EDU + EDU_p + contrib.y.c +
-                      contrib.y.c_p + ret.age.c + FNAC + age.diff.c + p.surv +
-                      HousReg + car + strata(sex), data = pen.coupl)
+    cox.p3 <- coxph(Surv(time = age, time2 = age.exit, event=event) ~ hh.in.c + EDU + EDU_p + con.y +
+                      con.y_p + ret.age.c  + ret.age.c_p + FNAC + age.diff.c + p.surv +
+                      HousReg + car + hh + strata(sex), data = pen.coupl)
     summary(cox.p3)
     
 
@@ -397,7 +407,7 @@ coupl <- inner_join(retire,part2, by="kID")
                                                 time2 = age.exit, 
                                                 event=event) ~ (hh.in.c + ESREAL + ESREAL_p + contrib.y.c +
                                                                    contrib.y.c_p + ret.age.c + FNAC + 
-                                                                   age.diff.c + p.surv +
+                                                                   age.diff.c + p.surv + hh +
                                                                    HousReg + car)*sex - sex + strata(sex),
                                  data    = pen.coupl,
                                  ties    = c("efron","breslow","exact")[1])
@@ -421,12 +431,11 @@ coupl <- inner_join(retire,part2, by="kID")
     stargazer(cox.p3, title="Stratified Cox PH model",no.space=F, 
               ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
               covariate.labels=c("1500-1999  Eur/month","$<$ 1000 Eur/month","$>$ 2000 Eur/month",
-                                 "high education.","high education (partner)","26-40 y. contrib.",
-                                 "$<$ 15 y. contrib.","$>$ 40 y. contrib.","26-40 y. contrib.(partner)",
-                                 "$<$ 15 y. contrib.(partner)","$>$ 40 y. contrib.(partner)","in time ret.",
-                                 "late ret.","in time ret.(partner)","late ret.(partner)", "birth year (cohort)",
-                                 "$>$ 10 y. younger","1-10 y. younger", "1-10 y. older","$>$10 y. older" ,
-                                 "other regime", "rent", "2 vehicles","$>$ 2 vehicles","no vehicles"), 
-                                  single.row=TRUE,apply.coef = exp)
+                                 "high education.","high education (partner)","$<$ 20 y. contrib.",
+                                 "$>$ 40 y. contrib.","$<$ 20 y. contrib.(partner)","$>$ 40 y. contrib.(partner)",
+                                 "in time ret.","late ret.","in time ret.(partner)","late ret.(partner)", "birth year (cohort)",
+                                  "$>$10 y. older","$>$ 10 y. younger", "1-10 y. older","1-10 y. younger","lost partner",
+                                 "other regime", "rent", "2 vehicles","$>$ 2 vehicles","no vehicles", "large hh", "couple hh"), 
+                                  single.row=TRUE, apply.coef = exp,star.cutoffs=c(0.05,0.01,0.001))
     
     

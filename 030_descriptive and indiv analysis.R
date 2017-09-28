@@ -394,33 +394,77 @@
   rm(cox.pen.1)
   
   ##                                coef exp(coef) se(coef)       z Pr(>|z|)    
-  ## pensize500-999 Euro        -0.05998   0.94178  0.00851  -7.049 1.80e-12 ***
-  ## pensizeless than 500 Euro  -0.36064   0.69723  0.01230 -29.322  < 2e-16 ***
-  ## pensizemore than 2000 Euro -0.08899   0.91485  0.01827  -4.871 1.11e-06 ***
+  ## pensize1000-1999 Euro       0.05998   1.06182  0.00851   7.049  1.8e-12 ***
+  ## pensizeless than 500 Euro  -0.30066   0.74033  0.01075 -27.978  < 2e-16 ***
+  ## pensizemore than 2000 Euro -0.02901   0.97141  0.01736  -1.671   0.0947 . 
+  ## ref: 500-999 Euro
   ## Likelihood ratio test= 1017  on 3 df,   p=0 - this indicates that pension size alone is not a strong predictor
   
   cox.pen.2 <- coxph(SO ~ pensize + sex + contrib.y.c, data = retire)
   summary(cox.pen.2)
   rm(cox.pen.2)
   
-  ## coef exp(coef)  se(coef)      z Pr(>|z|)    
-  ## pensize500-999 Euro           -0.006675  0.993348  0.008815 -0.757   0.4489    
-  ## pensizeless than 500 Euro      0.004579  1.004590  0.014580  0.314   0.7535    
-  ## pensizemore than 2000 Euro    -0.115668  0.890771  0.018292 -6.323 2.56e-10 ***
+  ##                                    coef exp(coef)  se(coef)      z Pr(>|z|)    
+  ## pensize1000-1999 Euro          0.006675  1.006697  0.008815  0.757   0.4489    
+  ## pensizeless than 500 Euro      0.011254  1.011318  0.012413  0.907   0.3646    
+  ## pensizemore than 2000 Euro    -0.108994  0.896736  0.017621 -6.185 6.19e-10 ***
   ## sexmale                        0.615451  1.850491  0.010852 56.713  < 2e-16 ***
   ## contrib.y.c26-40 years         0.056698  1.058336  0.011228  5.050 4.43e-07 ***
   ## contrib.y.cless than 15 years  0.097906  1.102859  0.016173  6.054 1.42e-09 ***
   ## contrib.y.cmore than 40 years -0.027897  0.972488  0.012623 -2.210   0.0271 *
   #### Likelihood ratio test= 5799  on 7 df,   p=0
+  ##### !!!!!!!!!
   ##### This shows clearly why we need to stratify the model by sex (different life course trajectories)
 
   
   ### ------------------------------------------------------------------------------------------------- ###  
   
+  ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
+  ### some last changes
+ 
+  ### And for the sake of a clean output I will collapse the education categories
+  
+  retire <- retire %>% mutate(EDU = factor(ifelse(ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ.",
+                                                        "no or low education","high education")))
+  
+  retire <- within(retire, EDU <- relevel(EDU, ref = "no or low education"))
+  
+  ## collapse contrib.y
+  retire <- retire %>% mutate(con.y = factor(ifelse(contrib.years<20, "less than 20 years",
+                                                          ifelse(contrib.years<40, "20-40 years",
+                                                                 "more than 40 years"))))
+  ## pension size
+  retire <- within(retire, pensize <- relevel(pensize, ref = "1000-1999 Euro"))
+  
+  ## And the household size variable
+  retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only",ifelse(NMIEM<=7, "small household","large household"))))
+  retire <- within(retire, hh <- relevel(hh, ref = "with partner only"))
+  
+  ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
+  
+  
+  
+  
   ## 3.2.2 Stratified models (= assumes different baselines)
-  cox.all.1 <- coxph(SO ~ pensize + ESREAL + contrib.y.c + ret.age.c + FNAC + ECIVIL + HousReg + car + strata(sex)
+  cox.all.1 <- coxph(SO ~ pensize + ESREAL + con.y + ret.age.c + FNAC + ECIVIL + HousReg + car + hh + strata(sex)
                      , data=retire)
   summary(cox.all.1)
+  cox.zph(cox.all.1)
+  
+  # check the log-log-survival curves for sexes
+  # km2 <- survfit(SO~sex, data = retire)
+  # km2
+  # km2.p <- tidy(km2) %>% mutate(strata = revalue(strata,c("sex=female"="female","sex=male"="male"))) %>%
+  #   mutate(logkm = -ln(estimate)) %>% 
+  #   ggplot() +
+  #   geom_step(mapping = aes(x=time, y=loglogkm, color=strata))         +
+  #   scale_y_continuous(name = "Survival Probability")                  +
+  #   scale_x_continuous(name = "Age")                                   +
+  #   scale_colour_manual(values = c("orange", "darkgrey"), name="")     +
+  #   theme_minimal()
+  # 
+  # km2.p          # note: logrank test not possible for left truncated data
+  # rm(km2, km2.p)
   
 
   ## 3.2.3 Separate models for females and males 
@@ -429,7 +473,7 @@
   ret.separate <- lapply(split(retire, retire$sex),
                          FUN = function(DF) {
                            
-                           coxph(SO ~ pensize + ESREAL + contrib.y.c + ret.age.c + FNAC + ECIVIL + HousReg + car, retire)
+                           coxph(SO ~ pensize + ESREAL + con.y + ret.age.c + FNAC + ECIVIL + HousReg + car + hh, retire)
                          })
   ret.separate
   
@@ -486,12 +530,12 @@
   
   stargazer(cox.all.1, title="Full model",no.space=F, 
             ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-            covariate.labels=c("500-999  Eur/month","$<$ 500 Eur/month","$>$ 2000 Eur/month",
+            covariate.labels=c("1000-1999  Eur/month","$<$ 500 Eur/month","$>$ 2000 Eur/month",
                                "no formal degree","Primary Ed.","Secondary Ed.",
-                               "Tertiary Ed.","26-40 y. contrib.","$<$ 15 y. contrib.",
-                               "> 40 y. contrib.","in time ret.","late ret.", "birth year (cohort)","single",
-                               "widowed", "divorced","rent","other regime", "2 vehicles",
-                               "$>$ 2 vehicles","no vehicles"), single.row=TRUE)
+                               "Tertiary Ed.","$<$ 20 y. contrib.", "$>$ 40 y. contrib.","in time ret.",
+                               "late ret.", "birth year (cohort)","single",
+                               "widowed", "divorced","other regime", "rent", "2 vehicles",
+                               "$>$ 2 vehicles","no vehicles"), single.row=TRUE, apply.coef = exp)
 
 
   ## 4.1. Flexible Parametric Model 
