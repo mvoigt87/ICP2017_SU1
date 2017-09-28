@@ -57,8 +57,22 @@ retire <- retire[order(retire$kID) , ]
 # see double entries = individuals with two different social security spells
 # (remember "dublicated" function)
 r.test <- retire[duplicated(retire[1]) | duplicated(retire[1], fromLast=TRUE),] 
+# 267174 cases receive more than one form of social security benefits
 
-  # 267174 cases receive more than one form of social security benefits
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+kk<- retire[1]  # comprueba
+sum(duplicated(kk))                                 # 133690 of 1371099 cases
+sum(duplicated(kk, fromLast=TRUE))                  # 133690 of 1371099 cases
+sum(duplicated(kk) | duplicated(kk, fromLast=TRUE)) # 267174 of 1371099 cases
+sum(duplicated(kk) & duplicated(kk, fromLast=TRUE))  # 206 triplicados o más (triplets)
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
+r.test <- retire[duplicated(retire[1]) | duplicated(retire[1], fromLast=TRUE),] 
+
+sum(duplicated(r.test$kID))  # 133690
+length(unique(r.test$kID))   # 133484  personas con mas de una pension.
+
+  # 133484 cases receive more than one form of social security benefits
 
 # ------------------------------------------------------------------------------------------- #
 # 1.1.3 Preparing the different kinds of pensions spells to be assigned to only one individual
@@ -170,8 +184,8 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   retire <- retire %>% mutate(age.exit = end.date - FNAC)
   summary(retire$age.exit)
 
-  #     Min.  1st Qu.  Median    Mean  3rd Qu.     Max. 
-  #   56.58    69.00    74.63   75.49    81.46   94.99
+  #       Min.  1st Qu.  Median    Mean  3rd Qu.     Max. 
+  #     56.58     69.02   74.68   75.53   81.52   94.99 
 
   
   ## ---- ##
@@ -414,7 +428,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   rm(t.tbl)
   
   #        Own       Rent   Other Form 
-  #      90.75       4.81         4.43   # in percent (%)
+  #      90.78       4.75         4.75   # in percent (%)
   
   ## ---------------------------- ##
   ## NHAB - number of rooms       ##
@@ -430,7 +444,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   round(100*(prop.table(NH.tbl)),digits = 2)
   
   # 3 or less rooms         4-5 rooms         6-8 rooms   more than 8 rooms 
-  #            8.43             53.24             34.84                3.50  # in percent (%)
+  #             8.32             53.03             35.10              3.56  # in percent (%)
   
   
   ## -------------------------------------------- ##
