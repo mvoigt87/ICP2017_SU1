@@ -439,9 +439,25 @@ coupl <- inner_join(retire,part2, by="kID")
                       HousReg + car + hh + strata(sex), data = pen.coupl)
     summary(cox.p3)
     
-
+    #### ---------------------------------------------------------------------------------------------------- ####
+    
+    #### Male
+    
+    cox.p3a <- coxph(Surv(time = age, time2 = age.exit, event=event) ~ hh.in.c + EDU + EDU_p + con.y +
+                      con.y_p + ret.age.c  + ret.age.c_p + FNAC + age.diff.c + p.surv +
+                      HousReg + car + hh, data = subset(pen.coupl,sex=="male"))
+    summary(cox.p3a)
+    
+    #### Female
+    cox.p3b <- coxph(Surv(time = age, time2 = age.exit, event=event) ~ hh.in.c + EDU + EDU_p + con.y +
+                      con.y_p + ret.age.c  + ret.age.c_p + FNAC + age.diff.c + p.surv +
+                      HousReg + car + hh, data = subset(pen.coupl,sex=="female"))
+    summary(cox.p3b)
     
     
+    
+    #### ---------------------------------------------------------------------------------------------------- ####
+    #### ---------------------------------------------------------------------------------------------------- ####
     #### ---------------------------------------------------------------------------------------------------- ####
     
     ### Model with interaction effects
@@ -471,7 +487,7 @@ coupl <- inner_join(retire,part2, by="kID")
     
     ### Stratified Model
     
-    stargazer(cox.p3, title="Stratified Cox PH model - household income",no.space=F, 
+    stargazer(cox.p3,cox.p3b, title="Cox PH model - household income",no.space=F, 
               ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
               covariate.labels=c("1000-1499  Eur/month","1500-1999  Eur/month","$<$ 1000 Eur/month",
                                  "high education.","high education (partner)","$<$ 20 y. contrib.",
@@ -481,4 +497,15 @@ coupl <- inner_join(retire,part2, by="kID")
                                  "other regime", "rent", "no vehicles", "large household", "couple household"), 
                                   single.row=TRUE, apply.coef = exp)
     
+    ### Two sexes model 
+    
+    stargazer(cox.p3a, title="Stratified Cox PH model - household income",no.space=F, 
+              ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+              covariate.labels=c("1000-1499  Eur/month","1500-1999  Eur/month","$<$ 1000 Eur/month",
+                                 "high education.","high education (partner)","$<$ 20 y. contrib.",
+                                 "$>$ 40 y. contrib.","$<$ 20 y. contrib.(partner)","$>$ 40 y. contrib.(partner)",
+                                 "in time ret.","late ret.","in time ret.(partner)","late ret.(partner)", "birth year (cohort)",
+                                 "$>$10 y. older","$>$ 10 y. younger", "1-10 y. older","1-10 y. younger","lost partner",
+                                 "other regime", "rent", "no vehicles", "large household", "couple household"), 
+              single.row=TRUE, apply.coef = exp)
     
