@@ -80,7 +80,7 @@ coupl <- inner_join(retire,part2, by="kID")
   ## and to also obtain knowledge about the household income, I will join the pension data from the partner
   r.small <- retire %>% select(kID,age,contrib.years, end.date, ret.pen, ret.age, ret.age.c,retire.y, event, 
                                exit, contrib.y.c, pensize, widow.y, wid.pen) %>% 
-    dplyr::rename(kIDcon=kID)
+  dplyr::rename(kIDcon=kID)
   colnames(r.small)[2:14] <- str_c( colnames(r.small)[2:14],"_p" )
   tbl_df(r.small)
   
@@ -255,14 +255,35 @@ coupl <- inner_join(retire,part2, by="kID")
     ## 2.2.1 Survival object ##
     ## --------------------- ##
     
+    ### I am interested in the effects of lifelong disadvantages which are visible during entering or being retired
+    ### They manifest through life (working status) and the contribution time to social security and pension size are
+    ### good indicator of the working life history
+    
+    ### NOT the effect of retirement on mortality - being retired or retiring is just a data requirement
+    ### or in terms of the paper strategy a necessity since the retirement age is going to increase
+    
+    
+    ####### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+   
+     ### accounting for left truncation
+    
+    #       survfit(coxph(Surv(start,stop,event)~1,data=test2),type="kaplan-meier")
+    
+    # Using type="kaplan-meier" gives a product-type estimator that in
+    # untruncated data would be the Kaplan-Meier. Without this you get exp(-H)
+    # where H is the estimated cumulative hazard (an estimator variously
+    #                                             attributed to Aalen, Breslow, Peto, and probably others).
+    
+    ####### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+    
     SO <- Surv(time=pen.coupl$age, 
-               time2 =pen.coupl$age.exit,
-               event = pen.coupl$event)
+                time2 =pen.coupl$age.exit,
+                event = pen.coupl$event)
     
     ## ------------------------------------------ ##    
     # 2.2.2 Kaplan Meier with the main covariates
     ## ------------------------------------------ ##
-    
+
     km1 <- survfit(SO~1)
     km1
     km1.b <- tidy(km1)
@@ -273,6 +294,22 @@ coupl <- inner_join(retire,part2, by="kID")
     
     rm(km1,km1.b)
     
+    
+    #### Left truncated KM - through a cox ph estimation
+    
+    km1a <-     survfit(coxph(Surv(time=age, 
+                                   time2 =age.exit,
+                                   event = event)~1,data=pen.coupl),type="kaplan-meier")
+    km1a
+    km1a.b <- tidy(km1a)
+    km1a.b %>% ggplot() +
+      geom_step(mapping=aes(x=time, y=estimate)) +
+      scale_y_continuous(name = "Survival Probability")                  +
+      scale_x_continuous(name = "Age")
+    
+    rm(km1a,km1a.b)
+    
+
     ## -------------------- ##    
     # 2.2.3 sex differences
     ## -------------------- ##
@@ -359,6 +396,12 @@ coupl <- inner_join(retire,part2, by="kID")
                                                             ifelse(contrib.years_p<40, "20-40 years",
                                                                    "more than 40 years"))))
     
+    ## pension size
+    pen.coupl <- within(pen.coupl, hh.in.c <- relevel(hh.in.c, ref = "more than 2000 Euro"))
+    
+    ## car variable
+    pen.coupl <- pen.coupl %>% mutate(car= factor(ifelse(car=="no car", "no car","owns car(s)")))
+    pen.coupl <- within(pen.coupl, car <- relevel(car, ref = "owns car(s)"))
     
     ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
     
@@ -428,14 +471,14 @@ coupl <- inner_join(retire,part2, by="kID")
     
     ### Stratified Model
     
-    stargazer(cox.p3, title="Stratified Cox PH model",no.space=F, 
+    stargazer(cox.p3, title="Stratified Cox PH model - household income",no.space=F, 
               ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-              covariate.labels=c("1500-1999  Eur/month","$<$ 1000 Eur/month","$>$ 2000 Eur/month",
+              covariate.labels=c("1000-1499  Eur/month","1500-1999  Eur/month","$<$ 1000 Eur/month",
                                  "high education.","high education (partner)","$<$ 20 y. contrib.",
                                  "$>$ 40 y. contrib.","$<$ 20 y. contrib.(partner)","$>$ 40 y. contrib.(partner)",
                                  "in time ret.","late ret.","in time ret.(partner)","late ret.(partner)", "birth year (cohort)",
                                   "$>$10 y. older","$>$ 10 y. younger", "1-10 y. older","1-10 y. younger","lost partner",
-                                 "other regime", "rent", "2 vehicles","$>$ 2 vehicles","no vehicles", "large hh", "couple hh"), 
-                                  single.row=TRUE, apply.coef = exp,star.cutoffs=c(0.05,0.01,0.001))
+                                 "other regime", "rent", "no vehicles", "large household", "couple household"), 
+                                  single.row=TRUE, apply.coef = exp)
     
     
