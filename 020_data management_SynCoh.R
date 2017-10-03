@@ -40,14 +40,13 @@ library(forcats)
 ### idea is to have a synthetic cohort
 
 retire <- inner_join(ss.benefits,ss.benefits.c2002,by="kID") %>%  
-  # global start year for our observation
-  mutate(start.year = 2011) %>% 
-  # age in 2011 - entry into retirement will be a different variable
-  mutate(age = start.year - FNAC) %>%
+  # global start year for our observation is 2011
+  # age at the entering poin to our risk set                       !!! Person years under risk !!!
+  mutate(age = years.of.entry - FNAC) %>%
   # extract the age groups 50-90 (age at census year)
   filter(age>=55) %>% filter(age<=90)
 
-# 1.371.099 people
+# 1.381.307 people at risk = before: 1.371.099 people
 
 # 1.1.2 order by kID (because yu have an unordered long dataset and subset)
 
@@ -57,22 +56,22 @@ retire <- retire[order(retire$kID) , ]
 # see double entries = individuals with two different social security spells
 # (remember "dublicated" function)
 r.test <- retire[duplicated(retire[1]) | duplicated(retire[1], fromLast=TRUE),] 
-# 267174 cases receive more than one form of social security benefits
+# 266466 cases receive more than one form of social security benefits
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 kk<- retire[1]  # comprueba
-sum(duplicated(kk))                                 # 133690 of 1371099 cases
-sum(duplicated(kk, fromLast=TRUE))                  # 133690 of 1371099 cases
-sum(duplicated(kk) | duplicated(kk, fromLast=TRUE)) # 267174 of 1371099 cases
+sum(duplicated(kk))                                 # 133336 of 1.381.307 cases
+sum(duplicated(kk, fromLast=TRUE))                  # 133336 of 1371099 cases
+sum(duplicated(kk) | duplicated(kk, fromLast=TRUE)) # 266466 of 1371099 cases
 sum(duplicated(kk) & duplicated(kk, fromLast=TRUE))  # 206 triplicados o más (triplets)
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
 
-r.test <- retire[duplicated(retire[1]) | duplicated(retire[1], fromLast=TRUE),] 
+sum(duplicated(r.test$kID))  # 133336
+length(unique(r.test$kID))   # 133130  personas con mas de una pension.
 
-sum(duplicated(r.test$kID))  # 133690
-length(unique(r.test$kID))   # 133484  personas con mas de una pension.
+  # 133130 cases receive more than one form of social security benefits
 
-  # 133484 cases receive more than one form of social security benefits
+  # 1.248.177 = expected number of individuals after grouping
 
 # ------------------------------------------------------------------------------------------- #
 # 1.1.3 Preparing the different kinds of pensions spells to be assigned to only one individual
@@ -111,7 +110,12 @@ retire$wid.pen[retire$benefit.type=="Viudedad"] <- retire$IMP2016[retire$benefit
 #### Change the "character" variables for the following step - (applying the "minimum function")
  str(retire)
  table(retire$end.cause)
+ round(prop.table(table(retire$end.cause)),digits = 3)
+ 
+ #       C        D 
+ #   83.6%    16.4%
 
+ 
    # "end.cause" into a binary numeric variable
     retire <- retire %>% mutate(event=if_else(end.cause=="C",0,1))
     
@@ -120,6 +124,7 @@ retire$wid.pen[retire$benefit.type=="Viudedad"] <- retire$IMP2016[retire$benefit
    retire$TENEN <- as.numeric(as.character(retire$TENEN))
    retire$SVIV <- as.numeric(as.character(retire$SVIV))
    retire$VEHIC <- as.numeric(as.character(retire$VEHIC))
+   retire$DEPEN <- as.numeric(as.character(retire$DEPEN))
 
 
 ####### --------------------------------------------------------------------- #########
@@ -132,26 +137,24 @@ glimpse(retire)
 retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>% 
           group_by(kID) %>% summarise_all(funs(max))
 
-### leaves us with 1.237.409 individuals
+### leaves us with 1.247.971 individuals                             #### Number is bigger than in earlier versions !!!
 
-### 1.2.2 Further approach study population
-    ### not anymore
-    # - interested in entering in retirement (Jubilación) => individuals without retirement pension will be excluded
-  
-# - to check for a possible health bias, we need the entry into disability if existent
-  
-  
+
+### 1.2.2 Further cleaning: Exclude everybody without retirement pension 
+
   retire <- retire %>% 
     # to extract all cases which have retired and exclude the ones who just receive widowhood/disability pension
     filter(retire.y!=0) %>% 
-    ## create a variable to account for health effects -  if someone receives disability pension before retiring
-    mutate(health.st = ifelse(dis.y!=0 & dis.y<retire.y, 1, 0))
+    filter(ret.pen!=0) %>% 
+    ## create a variable to account for health effects -  answered in the census (DEPEN) he or she needs help or
+    ## receives a disability pension
+    mutate(health.st = ifelse(dis.y!=0 & dis.y<retire.y, 1, 0)) %>% mutate(health.st = ifelse(DEPEN==1,1,health.st))
   
   table(retire$health.st) 
   
-  # 0=667345, 1=2143 (0.31 % of the retirees are frail regarding this definition (DAHLY?))
+  # 0 = 666424   1 = 3064 (0.45 % of the retirees are frail regarding this definition (DAHLY?))
   
-  ### total case number 669771
+  ### total case number 670504          #### !!! This number has changed due to the change in the entry age variable
   
 
   
@@ -174,8 +177,9 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   ev.tbl <- table(retire$exit)
   round(prop.table(ev.tbl),digits = 2)
   
-  # 93976 deaths occured which translates to 14% of the individuals within the observation period
-  # 575795 cases were censored
+  # 93965 deaths occured which translates to 14% of the individuals within the observation period
+  # 576539 cases were censored
+  ## adjusted to most current numbers
   
   ## ---------------- ##
   ## Age at exit      ##
@@ -185,7 +189,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   summary(retire$age.exit)
 
   #       Min.  1st Qu.  Median    Mean  3rd Qu.     Max. 
-  #     56.58     69.02   74.68   75.53   81.52   94.99 
+  #      55.89   69.00   74.66   75.51   81.50     94.99   ## newest population is slightly younger on average
 
   
   ## ---- ##
@@ -193,7 +197,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   ## ---- ##  
   
   retire$sex <- as.factor(retire$SEXO)
-  retire %>% count(SEXO)
+
   # since there are only two sexes and no missings the following code is sufficient 
   retire$sex <- "male"    
   retire$sex[retire$SEXO==6] <- "female"
@@ -202,16 +206,18 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   sex.tb <- table(retire$sex)
   round(100*sex.tb/sum(sex.tb), digits=2) 
   
-    #   female        male 
-    #     33 %        67 %
+    #   female         male 
+    #   32.98%       67.02% 
     # ---------------------- #  
     # Values which probably represent the average differences in labor force participation
-    # of this generations
+    # of this generations   -  slightly more men in the "new" data
+  
+  
 
   ## ---------------------------- ##
   ## Estado civil - civil status  ##
   ## ---------------------------- ##
-  retire %>% count(ECIVIL)
+  table(retire$ECIVIL) ## 3525 zeros which will be excluded for further analysisi
   # assuming the zeros mean that the civil status was unknown (missing), the should be deleted (to be determent)
   retire <- retire %>% filter(ECIVIL>0)
   # Change the categories
@@ -222,7 +228,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   round(100*(civ.stat.tbl/sum(civ.stat.tbl)),digits = 2)
   
   # single      married      widowed divorced/sep 
-  #   8.30        81.25         7.91         2.54  # in percent (%)
+  #   8.31        81.26         7.90         2.54  # in percent (%)
 
   
   
@@ -231,8 +237,8 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   ## Education - highest degree ##
   ## -------------------------- ##
   table(retire$ESREAL)
-  # again zeros - for now they will be excluded
-  retire <- retire %>% filter(ESREAL>0)
+  # 
+
   retire$ESREAL <- as.factor(retire$ESREAL)
   retire$ESREAL <- revalue(retire$ESREAL, c("1"="Illiterate", "2"= "Incomplete", "3"="Primary Educ.",
                                             "4"="Secondary Educ.", "5"="Secondary Educ.", "6"="Secondary Educ.",
@@ -243,13 +249,21 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   round(100*(deg.tbl/sum(deg.tbl)),digits = 2)
   
  #  Illiterate      Incomplete   Primary Educ.  Secondary Educ.   Tertiary Educ. 
- #        5.74           34.84           27.51            25.30             6.61      # in percent (%)
+ #        5.73           34.82           27.51            25.33             6.62      # in percent (%)
+  
+  ### And for the sake of a clean output I will collapse the education categories
+  
+  retire <- retire %>% mutate(EDU = factor(ifelse(ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ.",
+                                                  "no or low education","Secondary/Tertiary Educ.")))
+  retire <- within(retire, EDU <- relevel(EDU, ref = "no or low education"))
+  round(prop.table(table(retire$EDU)), digits = 2)
   
   
   
   ## -------------------------- ##
   ## Occupation status en 2002  ##
   ## -------------------------- ##
+  
   table(retire$SITP)
   ## What are the 9-er - see if they were the ones without job
   retire$SITP <- factor(retire$SITP)
@@ -260,15 +274,21 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   occ.tbl <- table(retire$SITP)
   round(prop.table(occ.tbl,margin = NULL), digits = 2)
   
+  
+  ## -------------------------- ##
+  ## Entry to retirement        ##
+  ## -------------------------- ##
+  
   summary(retire$retire.y)
   # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
   # 1967    1998    2006    2004    2011    2016
-  #### Not applicable since many of the individuals were already retired in 2002
-   ## ! Check cases which retired in 2016
+  
+  ## We will deal with left truncation in the new study design
 
-    retire %>% ggplot(aes(x=retire.y))+
-    geom_bar()
-    ## interesting pattern (what happened at the spike years?)
+    # retire %>% ggplot(aes(x=retire.y))+
+    # geom_bar()
+    ## interesting pattern (what happened at the years with spikes?)
+    
     
   ## -------------------------- ##
   ## Years in social security   ##
@@ -284,13 +304,14 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   ### What are the zeros?
   summary(subset(retire, contrib.years == 0, select=dis.pen))        # these cases probably need to be excluded
   
-   # dis.pen        
-    # Min.   :    0.00  
-    # 1st Qu.:    0.00  
-    # Median :    0.00  
-    # Mean   :   37.49  
-    # 3rd Qu.:    0.00  
-    # Max.   :63893.01 
+   #     ret.pen        
+  # Min.   :   687.5  
+  # 1st Qu.: 39026.6  
+  # Median : 40172.4  
+  # Mean   : 43580.7  
+  # 3rd Qu.: 40172.4  
+  # Max.   :257293.7  
+  ### these are the stats for the ones with 0 contribution years = an error???
   
   nrow(subset(retire, contrib.years == 0, select=years.of.entry))
   nrow(subset(retire, contrib.years == 0 & sex=="female", select=years.of.entry))
@@ -325,21 +346,23 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
     ## Extract the 40 cases with more than 60 years of contribution (15-75,20-80 cases are highly rare already)
     filter(contrib.years<=60) %>% 
     ## also extract the 22061 cases with zero years of contribution will be excluded
-    filter(contrib.years>0.1) %>% 
+    filter(contrib.years>=0.1) %>% 
     ## create a factor variable
     mutate(contrib.years = as.numeric(contrib.years)) %>% 
-    mutate(contrib.y.c = factor(ifelse(contrib.years<15, "less than 15 years",
-                                       ifelse(contrib.years<26, "15-25 years",
-                                              ifelse(contrib.years<41,"26-40 years","more than 40 years")))))
-      
+    mutate(con.y = factor(ifelse(contrib.years<20, "less than 20 years",
+                                       ifelse(contrib.years<41, "20-40 years",
+                                              "more than 40 years"))))
+    
+    # 644849 cases left  
       
     summary(retire$contrib.years)
-    table(retire$contrib.y.c)
+    table(retire$con.y)
    # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    # 1.0    25.0    35.0    33.2    41.0    60.0 
-   #        15-25 years        26-40 years less than 15 years more than 40 years 
-   #             136445             302682              25105             179870 
+   #       20-40 years   less than 20 years   more than 40 years 
+   #            369578                94654               179870
    
+    
   ## -------------------------- ##
   ## Pension income             ##
   ## -------------------------- ##
@@ -350,32 +373,38 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   hist(retire$ret.pen)
   summary(retire$ret.pen)
   #       Min.   1st Qu.   Median      Mean   3rd Qu.      Max. 
-  #      9.321  615.300   788.900  1081.000  1401.000  3085.000 
-  # a large number of people seem to receive a kind of standard/minimum pension (by 650)
+  #       0.01    595.80   745.50    958.70   1194.00   3085.00 
+  # a large number of people seem to receive a kind of standard/minimum pension (between 500 and 650 Euro)
   
   
-  retire$pensize <- factor(ifelse(retire$ret.pen<500,"less than 500 Euro",
+  
+  
+  retire <- retire %>% mutate(pensize = factor(ifelse(retire$ret.pen<500,"less than 500 Euro",
                                   ifelse(retire$ret.pen<1000, "500-999 Euro",
-                                         ifelse(retire$ret.pen<2000, "1000-1999 Euro", "more than 2000 Euro"))))
+                                         ifelse(retire$ret.pen<2000, "1000-1999 Euro", "more than 2000 Euro")))))
+
+  ## change reference for the pension size variable to the highest income category
+  retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
   
-  #### Change reference category for later analysis (ref=primary or secondary)
-  retire <- within(retire, pensize <- relevel(pensize, ref = "500-999 Euro"))
   
   ## ---------------------------------------- ##
-  ## Constructed entry age to retirement      ##
+  ## Constructed entry age to retirement      ##    
   ## ---------------------------------------- ##
   
   retire <- retire %>% mutate(ret.age = retire.y-FNAC)
   summary(retire$ret.age)
   # this doesn´t look right!
-      outlierKD(retire,ret.age)
-     ## 19909 Outlier!!! = 3% of the cases
-  
-      # Outliers identified: 19909 from 644101 observations
-      # Proportion (%) of outliers: 3.090974862638
-      # Mean of the outliers: 65.891265256919
-      # Mean without removing outliers: 63.9479470610976
-      # Mean if we remove outliers: 63.8859636938634
+      outlierKD(retire,ret.age)                              ### Analysis ran again 03.10.17
+     ## 20141 Outlier!!! = 3.1% of the cases
+      # Outliers identified: 20141 from 644849 observations
+      # Proportion (%) of outliers: 3.12336686573136
+      # Mean of the outliers: 65.6456759843106
+      # Mean without removing outliers: 63.9394510497807
+      # Mean if we remove outliers: 63.8844412269412
+      
+   count(retire$ret.age[retire$ret.age<40])
+   table(retire$con.y[retire$ret.age<40])   # tried with various variables but could not identify the problem
+   hist(retire$FNAC[retire$ret.age<40])     # seems to be an error in the retire year variable
   
   # set back to 1 graph panel for the graphic window
   par(mfrow = c(1, 1))
@@ -383,8 +412,10 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   # I will choose a somewhat reasonable time frame from 45 to 85 (gives still enough room for extraordinary cases)
   retire <- retire %>% filter(ret.age>=45) %>% filter(ret.age<=85)
   hist(retire$ret.age, breaks = 39)
+  ### probably close to the real distribution with many entries during age 65-66
   
-
+  
+  
   ## reshape into a categorical variable (early, in-time, late)
   retire <- retire %>% mutate(ret.age.c = factor(ifelse(ret.age<64.1,"early retirement",
                                                         ifelse(ret.age<66,"in time retirement","late retirement"))))
@@ -393,23 +424,41 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   round(100*(prop.table(ret.time.tbl)),digits = 2)
   
   #  early retirement  in time retirement    late retirement 
-  #             35.41               56.86               7.74   # in percent (%)
+  #             35.48               56.79               7.73   # in percent (%)    ### slightly changed in current version
   
   
   
-  table(retire$age>retire$age.exit)                        # 2894 cases
+  table(retire$age>retire$age.exit)                        # 2800 cases (has changed!)
   summary(retire$age[retire$age>retire$age.exit])
   summary(retire$age.exit[retire$age>retire$age.exit])
   
+  ### !!!
+  ### Basically a transformation of the time variable for death/censorship
+  hist(retire$age.exit[retire$age>retire$age.exit])
+  summary(retire$end.date[retire$age>retire$age.exit])
+  summary(retire$years.of.entry[retire$age>retire$age.exit])
+  ret.test <- subset(retire, retire$age>retire$age.exit)
+  ### These are the ones where entry and the end data is set to 2010.99 - but the entry age is finer defined through the birth year
+  
+  #### !!! For now excluded from the analysis
+  
   retire <- retire %>% filter(age.exit>age)
   
+  
   ## ---------------------------- ##
-  ## Socioeconomic status in 2002 ##
+  ## Household size               ##
   ## ---------------------------- ##
   
-  table(retire$CSE)
-  ## too many categories - collapse reasonable (list or precategorization?)
+  ## And the household size variable - living with partner or more household members
+  retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
+  retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
   
+  
+  ## review the distribution
+  round(prop.table(table(retire$hh)), digits = 2)
+  
+  #  larger household   with partner only 
+  #             0.72%               0.28%
   
   
   ## ---------------------------- ##
@@ -418,8 +467,8 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   t.tbl <- table(retire$TENEN)
   
   ## recoding of categories
-  retire <- retire %>% mutate (TENEN = factor(ifelse( TENEN<=3,"Own",
-                                                      ifelse(TENEN==4, "Rent","Other form"))))
+  retire <- retire %>% mutate (TENEN = factor(ifelse( TENEN<=3,"Own","Other Form")))
+  retire <- within(retire, TENEN <- relevel(TENEN, ref = "Other Form"))
   cbind(colnames(retire))
   colnames(retire)[25] <- "HousReg"
   
@@ -427,8 +476,8 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   round(100*(prop.table(t.tbl)), digits=2)
   rm(t.tbl)
   
-  #        Own       Rent   Other Form 
-  #      90.78       4.75         4.75   # in percent (%)
+  #         Own       Other Form 
+  #      90.78%            9.22%
   
   ## ---------------------------- ##
   ## NHAB - number of rooms       ##
@@ -443,6 +492,8 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   NH.tbl <- table(retire$room)
   round(100*(prop.table(NH.tbl)),digits = 2)
   
+  ### This variable is somewhat hard to interpret (is it a socioeconomic indicator?)
+  
   # 3 or less rooms         4-5 rooms         6-8 rooms   more than 8 rooms 
   #             8.32             53.03             35.10              3.56  # in percent (%)
   
@@ -453,13 +504,14 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   
   table(retire$VEHIC)
   
-  retire <- retire %>% mutate(car = ifelse(VEHIC==1,"1 car",
-                                                  ifelse(VEHIC==2, "2 cars",
-                                                         ifelse(VEHIC==3,"3 cars","no car"))))
+  retire <- retire %>% mutate(car = factor(ifelse(VEHIC>=1,"car(s) available","no car")))
+  retire <- within(retire, car <- relevel(car, ref = "car(s) available"))
   
 
   ####### -------------------------------------------------------------------------------------- #########
 
+  
+  
 ### 1.4 Some graphical checks
   
   
@@ -496,7 +548,7 @@ retire <- retire %>% select(-benefit.type,-IMP2016, -end.cause) %>%
   
   
   ## Contribution of contribution years 
-  retire %>% ggplot(aes(x=contrib.year.c, fill=ESREAL))+
+  retire %>% ggplot(aes(x=con.y, fill=ESREAL))+
     geom_bar()
   
   ## Visualization of entry age by education

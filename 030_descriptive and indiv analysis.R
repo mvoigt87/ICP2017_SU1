@@ -13,7 +13,8 @@
 ### ------------------------------------------------------------------------------------------------- ### 
 
 ### 0.1. Loading data set
-  load("030_RetirementIND.RData")
+  load("030_RetirementIND.RData")   # _oct
+  load("060_ss_cc2002.RData")
  
 ### 0.2 load necessary package
  library(reshape)
@@ -38,9 +39,9 @@
  # X-squared = 4189.8, df = 1, p-value < 2.2e-16
  rm(s.e.tbl)
 
- #            female  male
- #   censored  0.90% 0.84%
- #   dead      0.10% 0.16%
+ #            female  male           ## new values
+ #   censored  0.91% 0.85%
+ #   dead      0.09% 0.15%
  
  # bar plot events by sex
  retire %>% ggplot(aes(x=sex,fill=exit))+
@@ -50,19 +51,73 @@
  summary(retire$age.exit[retire$exit=="dead"])
  summary(retire$age.exit[retire$exit=="censored"])
    #### age at death
-   #   57.26    76.67    82.05   81.19    86.63   94.90         # higher and seems to be more compressed
+   #      Min. 1st Qu.  Median    Mean  3rd Qu.    Max.
+   #    57.26    76.53   81.92   81.08    86.52   94.90       # new values for the "dead" population make more sense
+                                                              # They are much higher on average.
    #### age at census
    #   56.58    68.42    73.28   74.57    80.02   94.99 
+ 
  summary(aov(retire$age.exit ~ retire$exit))
    #                 Df   Sum Sq Mean Sq F value Pr(>F)    
-   # retire$exit      1  3511610 3511610   64663 <2e-16 ***
-   # Residuals   666125 36174750      54   
+   # retire$exit      1  3331876 3331876   61388 <2e-16 ***
+   # Residuals   641973 34843448      54                 
  
  # histogram of age at exit distribution
  retire %>% ggplot(aes(x=age.exit,fill=exit))+
    geom_histogram(bins=40)+
    scale_fill_discrete(name = "")
+ ## clear concentration at the older ages
  
+ ################# 
+ #################
+ 
+ ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+ ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+ 
+ ## For a partner variable which starts at the time of entry to the risk set 2011
+ 
+  cbind(colnames(retire))
+  cbind(colnames(parned.c2002))
+ 
+  ### Join all individuals who have a married partner in 2011
+  
+  part.R <- parned.c2002 %>% select(kID,FNAC) %>% mutate(GebJahr = FNAC) %>% select(-FNAC) %>% 
+  #  create a partner marker for the ones in the parned data
+  mutate(marstat = 1)
+ 
+  ### Bring them back together and create a partnership variable (married in 2011/not married in 2011)
+  
+  # 1. Full Join command keeps all rows and all columns
+  retire <- retire %>% full_join(part.R, by="kID")
+  
+  # create the marital status variable for the full individual dataset and make a factor variable out of it
+  retire <- retire %>% mutate(civilst = factor(ifelse(is.na(marstat),"not married","married"))) %>% 
+    ### drop the 2 unused variables
+    select(-GebJahr, -marstat) %>% 
+    ### and the cases we have no further information about (not originally in the "retire" data set)
+    filter(!is.na(end.date))
+  
+  round(prop.table(table(retire$civilst)),digits = 2)
+  
+  #     married     not married 
+  #       0.89%           0.11%        ### looks ok!
+  
+  round(prop.table(table(retire$civilst,retire$ECIVIL),2),digits = 2)
+  
+  #               single married widowed divorced/sep
+  #   married       0.00    0.98    0.00         0.00
+  #   not married   1.00    0.02    1.00         1.00  ### Compared to 2002 only 2% of the sample seem
+                                                       ### to have lost their partner (divorce or widowed)
+  #table(retire$ECIVIL[!is.na(retire$marstat)])
+  
+  mean(retire$age[retire$civilst=="married"])       # 70.71 years
+  mean(retire$age[retire$civilst=="not married"])   # 73.12 years
+  
+
+  
+  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+  
  ### ------------------------------------------------------------------------------------------------- ###  
  
 # 1.1.2 Event distribution by education, pension income and other variables of social position (statistical tests)
@@ -75,11 +130,11 @@
  rm(ed.e.tbl)
  
   #            Illiterate  Incomplete  Primary Educ.  Secondary Educ.  Tertiary Educ.         # column percentage
-  #  censored       0.77%       0.82%          0.87%            0.91%           0.91%
-  #  dead           0.23%       0.18%          0.13%            0.09%           0.09% 
+  #   censored       0.79       0.83          0.88            0.91           0.91
+  #   dead           0.21       0.17          0.12            0.09           0.09
   # 	Pearson's Chi-squared test
   #    data:  table(retire$exit, retire$ESREAL)
-  #    X-squared = 10047, df = 4, p-value < 2.2e-16
+  #    X-squared = 8821.3, df = 4, p-value < 2.2e-16                                          ### has changed (less)
   
   ### Since we look at a synthetic cohort, these results indicate a social mortality gradient
  
@@ -102,12 +157,12 @@
   #   X-squared = 3405.5, df = 3, p-value < 2.2e-16
   
  
-  ## Event by Car ownership
+  ## Event by Car ownership - everybody in the data set seems to have a car
   
-  car.e.tbl <- table(retire$exit, retire$car)
-  round(prop.table(car.e.tbl,2),digits = 2)
-  chisq.test(car.e.tbl)
-  rm(car.e.tbl)
+  # car.e.tbl <- table(retire$exit, retire$car)
+  # round(prop.table(car.e.tbl,2),digits = 2)
+  # chisq.test(car.e.tbl)
+  # rm(car.e.tbl)
   ## same gradient visible
   
   ## Event by Room number and tenency status
@@ -122,6 +177,11 @@
     geom_bar(stat = "count") + facet_grid(. ~ HousReg)
   
   ## these variables seem not to contribute much
+  
+  
+  #### Changing the partnership variable
+  
+  ## extract the list of married
   
   
 ### ------------------------------------------------------------------------------------------------- ###  
@@ -194,13 +254,13 @@
   
   ### 3 Survival analysis for individuals in the synthetic cohort
 
-  # 3.1. Create the survival object
+  # 3.1. Create the survival object (new = survival objects incoporated in functions)
   
   # time=age at death
 
-  SO <- Surv(time=retire$age,
-             time2=retire$age.exit,
-             event = retire$event)
+  # SO <- Surv(time=retire$age,
+  #            time2=retire$age.exit,
+  #            event = retire$event)
   
   
 
@@ -262,11 +322,11 @@
   ### --------------------- ###
   # 3.2.2 sex differences
   ### --------------------- ###
-  km2 <- survfit(SO~sex, data = retire)
-  km2b <- survfit(coxph(Surv(time=age, 
-              time2 =age.exit,
-              event = event)~ sex ,data=retire),type="kaplan-meier")
-  km2
+  # km2 <- survfit(SO~sex, data = retire)
+  # km2b <- survfit(coxph(Surv(time=age, 
+  #             time2 =age.exit,
+  #             event = event)~ sex ,data=retire),type="kaplan-meier")
+  # km2
  
   
   #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
@@ -303,6 +363,12 @@
     
   km2.p          # note: logrank test not possible for left truncated data
   
+  ### cumulative distribution function
+  
+    km2.p <- dplyr::union(km2.p, km2.pb) %>% 
+    ggplot() +
+    geom_step(mapping = aes(x=time, y=1-estimate, color=sex))  
+  
 
   
   rm(km2, km2.p, km2b, km2.a1, km2.b1,  km2.pb)
@@ -311,36 +377,36 @@
   ### --------------------- ###
   # 3.2.3 Education
   ### --------------------- ###
-  km3 <- survfit(SO~ESREAL, data=retire)
-  km3.p <- tidy(km3) %>% mutate(strata = revalue(strata, c("ESREAL=Illiterate"="illiterate","ESREAL=Incomplete"="incomplete",
-                                                           "ESREAL=Primary Educ."="Primary Educ.", "ESREAL=Secondary Educ."="Secondary Educ.",
-                                                           "ESREAL=Tertiary Educ."="Tertiary Educ."))) %>% 
-    ggplot() +
-    geom_step(mapping = aes(x=time, y=estimate, color=strata)) +
-    scale_y_continuous(name = "Survival Probability")          +
-    scale_x_continuous(name = "Age")                           +
-    scale_color_discrete(name="")                              +
-    theme_minimal()
-  
-   rm(km3, km3.p)
+  # km3 <- survfit(SO~ESREAL, data=retire)
+  # km3.p <- tidy(km3) %>% mutate(strata = revalue(strata, c("ESREAL=Illiterate"="illiterate","ESREAL=Incomplete"="incomplete",
+  #                                                          "ESREAL=Primary Educ."="Primary Educ.", "ESREAL=Secondary Educ."="Secondary Educ.",
+  #                                                          "ESREAL=Tertiary Educ."="Tertiary Educ."))) %>% 
+  #   ggplot() +
+  #   geom_step(mapping = aes(x=time, y=estimate, color=strata)) +
+  #   scale_y_continuous(name = "Survival Probability")          +
+  #   scale_x_continuous(name = "Age")                           +
+  #   scale_color_discrete(name="")                              +
+  #   theme_minimal()
+  # 
+  #  rm(km3, km3.p)
   ## Differences between Tertiary education and illiterates visible, the others seem to overlap quite a lot 
   
   ### ------------------------------ ###
   # 3.2.4 Pension Size (categorical)
   ### ------------------------------ ###
-   km4 <- survfit(SO~pensize, data=retire)
-   km4.p <- tidy(km4) %>% mutate(strata = revalue(strata, c("pensize=less than 500 Euro"="less than 500 Euro",
-                                                            "pensize=500-999 Euro"="500-999 Euro",
-                                                            "pensize=1000-1999 Euro"="1000-1999 Euro", 
-                                                            "pensize=more than 2000"="more than 2000"))) %>% 
-     ggplot() +
-     geom_step(mapping = aes(x=time, y=estimate, color=strata)) +
-     scale_y_continuous(name = "Survival Probability")          +
-     scale_x_continuous(name = "Age")                           +
-     scale_color_discrete(name="")                              +
-     theme_minimal()
-   
-   rm(km4, km4.p)
+   # km4 <- survfit(SO~pensize, data=retire)
+   # km4.p <- tidy(km4) %>% mutate(strata = revalue(strata, c("pensize=less than 500 Euro"="less than 500 Euro",
+   #                                                          "pensize=500-999 Euro"="500-999 Euro",
+   #                                                          "pensize=1000-1999 Euro"="1000-1999 Euro", 
+   #                                                          "pensize=more than 2000"="more than 2000"))) %>% 
+   #   ggplot() +
+   #   geom_step(mapping = aes(x=time, y=estimate, color=strata)) +
+   #   scale_y_continuous(name = "Survival Probability")          +
+   #   scale_x_continuous(name = "Age")                           +
+   #   scale_color_discrete(name="")                              +
+   #   theme_minimal()
+   # 
+   # rm(km4, km4.p)
    ### that seems to be wrong at first sight, but the group of the 500 and less probably contains many women (assumed)
 
    
@@ -430,41 +496,41 @@
   ### -------------------------------------------------------- ###
      # Note - I don´t quite understand why the "positive" way to write the subset comand doesn´t work
    # high (secondary, tertiary) / male
-   km5.a1 <- survfit(Surv(time=age,
-                          time2=age.exit,
-                          event = event) ~ 1, data=subset(retire,sex=="male" & ESREAL!="Primary Educ." & ESREAL!="Incomplete" & ESREAL!="Illiterate"),
-                     type="kaplan-meier", conf.type = "log-log")
-   # high (secondary, tertiary) / female
-   km5.b1 <- survfit(Surv(time=age,
-                          time2=age.exit,
-                          event = event) ~ 1, data=subset(retire,sex=="female" & ESREAL!="Primary Educ." & ESREAL!="Incomplete" & ESREAL!="Illiterate"),
-                    conf.type = "log-log")
-   # low / male
-   km5.a2 <- survfit(Surv(time=age,
-                          time2=age.exit,
-                          event = event) ~ 1, data=subset(retire,sex=="male" & ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ."), 
-                     conf.type = "log-log")
-   # low / female
-   km5.b2 <- survfit(Surv(time=age,
-                          time2=age.exit,
-                          event = event) ~ 1, data=subset(retire,sex=="female" & ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ."), 
-                     conf.type = "log-log")
-   
-  KM_ED.1 <- tidy(km5.a1) %>% dplyr::select(estimate,time) %>% mutate(edu = "high education") %>% mutate(sex="male")
-  KM_ED.2 <- tidy(km5.b1) %>% dplyr::select(estimate,time) %>% mutate(edu = "high education") %>% mutate(sex="female")
-  KM_ED.3 <- tidy(km5.a2) %>% dplyr::select(estimate,time) %>% mutate(edu = "low education") %>% mutate(sex="male")
-  KM_ED.4 <- tidy(km5.b2) %>% dplyr::select(estimate,time) %>% mutate(edu = "low education") %>% mutate(sex="female")
-  
-  KM_EDU <- union(KM_ED.1,KM_ED.2) %>% union(KM_ED.3) %>% union(KM_ED.4) %>% ggplot() +
-   geom_step(mapping = aes(x=time, y=estimate, color=sex, linetype=edu))  +
-   scale_colour_manual(values = c("orange", "darkgrey"), name="")         +
-   scale_y_continuous(name = "Survival Probability")          +
-   scale_x_continuous(name = "Age")                           +
-   scale_linetype_discrete(name="")                           +  
-   theme_minimal()
-  
-  # delete the help files
-  rm(KM_ED.1,KM_ED.2,KM_ED.3,KM_ED.4, km5.a1,  km5.a2, km5.b1,  km5.b2)
+  #  km5.a1 <- survfit(Surv(time=age,
+  #                         time2=age.exit,
+  #                         event = event) ~ 1, data=subset(retire,sex=="male" & ESREAL!="Primary Educ." & ESREAL!="Incomplete" & ESREAL!="Illiterate"),
+  #                    type="kaplan-meier", conf.type = "log-log")
+  #  # high (secondary, tertiary) / female
+  #  km5.b1 <- survfit(Surv(time=age,
+  #                         time2=age.exit,
+  #                         event = event) ~ 1, data=subset(retire,sex=="female" & ESREAL!="Primary Educ." & ESREAL!="Incomplete" & ESREAL!="Illiterate"),
+  #                   conf.type = "log-log")
+  #  # low / male
+  #  km5.a2 <- survfit(Surv(time=age,
+  #                         time2=age.exit,
+  #                         event = event) ~ 1, data=subset(retire,sex=="male" & ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ."), 
+  #                    conf.type = "log-log")
+  #  # low / female
+  #  km5.b2 <- survfit(Surv(time=age,
+  #                         time2=age.exit,
+  #                         event = event) ~ 1, data=subset(retire,sex=="female" & ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ."), 
+  #                    conf.type = "log-log")
+  #  
+  # KM_ED.1 <- tidy(km5.a1) %>% dplyr::select(estimate,time) %>% mutate(edu = "high education") %>% mutate(sex="male")
+  # KM_ED.2 <- tidy(km5.b1) %>% dplyr::select(estimate,time) %>% mutate(edu = "high education") %>% mutate(sex="female")
+  # KM_ED.3 <- tidy(km5.a2) %>% dplyr::select(estimate,time) %>% mutate(edu = "low education") %>% mutate(sex="male")
+  # KM_ED.4 <- tidy(km5.b2) %>% dplyr::select(estimate,time) %>% mutate(edu = "low education") %>% mutate(sex="female")
+  # 
+  # KM_EDU <- union(KM_ED.1,KM_ED.2) %>% union(KM_ED.3) %>% union(KM_ED.4) %>% ggplot() +
+  #  geom_step(mapping = aes(x=time, y=estimate, color=sex, linetype=edu))  +
+  #  scale_colour_manual(values = c("orange", "darkgrey"), name="")         +
+  #  scale_y_continuous(name = "Survival Probability")          +
+  #  scale_x_continuous(name = "Age")                           +
+  #  scale_linetype_discrete(name="")                           +  
+  #  theme_minimal()
+  # 
+  # # delete the help files
+  # rm(KM_ED.1,KM_ED.2,KM_ED.3,KM_ED.4, km5.a1,  km5.a2, km5.b1,  km5.b2)
   
 
     
@@ -479,8 +545,8 @@
   
   
   ## change the reference for some categorical variables
-  retire <- within(retire, ECIVIL <- relevel(ECIVIL, ref = "married"))
-  retire <- within(retire, HousReg <- relevel(HousReg, ref = "Own"))
+  # retire <- within(retire, ECIVIL <- relevel(ECIVIL, ref = "married"))
+  retire <- within(retire, HousReg <- relevel(HousReg, ref = "Other Form"))
 
   ## 3.2.1 Standard Cox Regression with only pension size and contribution and sex as main variables  
   cox.pen.1 <- coxph(Surv(time=age, 
@@ -491,30 +557,13 @@
   summary(cox.pen.1)
   rm(cox.pen.1)
   
-  ##                                coef exp(coef) se(coef)       z Pr(>|z|)    
-  ## pensize1000-1999 Euro       0.05998   1.06182  0.00851   7.049  1.8e-12 ***
-  ## pensizeless than 500 Euro  -0.30066   0.74033  0.01075 -27.978  < 2e-16 ***
-  ## pensizemore than 2000 Euro -0.02901   0.97141  0.01736  -1.671   0.0947 . 
+  ##                                coef  exp(coef)  se(coef)       z Pr(>|z|)    
+  ##  pensize1000-1999 Euro      0.09987    1.10503   0.01828   5.464 4.66e-08 ***
+  ##  pensize500-999 Euro        0.05882    1.06058   0.01739   3.382 0.000719 ***
+  ##  pensizeless than 500 Euro -0.22591    0.79779   0.01963 -11.507  < 2e-16 *** 
   ## ref: 500-999 Euro
-  ## Likelihood ratio test= 1017  on 3 df,   p=0 - this indicates that pension size alone is not a strong predictor
+  ## Likelihood ratio test= 866.7  on 3 df,   p=0
   
-  cox.pen.2 <- coxph(Surv(time=age, 
-                          time2 =age.exit,
-                          event = event)~ pensize + sex + contrib.y.c, data = retire)
-  summary(cox.pen.2)
-  rm(cox.pen.2)
-  
-  ##                                    coef exp(coef)  se(coef)      z Pr(>|z|)    
-  ## pensize1000-1999 Euro          0.006675  1.006697  0.008815  0.757   0.4489    
-  ## pensizeless than 500 Euro      0.011254  1.011318  0.012413  0.907   0.3646    
-  ## pensizemore than 2000 Euro    -0.108994  0.896736  0.017621 -6.185 6.19e-10 ***
-  ## sexmale                        0.615451  1.850491  0.010852 56.713  < 2e-16 ***
-  ## contrib.y.c26-40 years         0.056698  1.058336  0.011228  5.050 4.43e-07 ***
-  ## contrib.y.cless than 15 years  0.097906  1.102859  0.016173  6.054 1.42e-09 ***
-  ## contrib.y.cmore than 40 years -0.027897  0.972488  0.012623 -2.210   0.0271 *
-  #### Likelihood ratio test= 5799  on 7 df,   p=0
-  ##### !!!!!!!!!
-  ##### This shows clearly why we need to stratify the model by sex (different life course trajectories)
 
   
   
@@ -522,74 +571,50 @@
   
   
   
-  
-  
-  
   ### ------------------------------------------------------------------------------------------------- ###  
-  
-  ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
-  ### some last changes
- 
-  ### And for the sake of a clean output I will collapse the education categories
-  
-  retire <- retire %>% mutate(EDU = factor(ifelse(ESREAL!="Secondary Educ." & ESREAL!="Tertiary Educ.",
-                                                        "no or low education","high education")))
-  
-  retire <- within(retire, EDU <- relevel(EDU, ref = "no or low education"))
-  
-  ## collapse contrib.y
-  retire <- retire %>% mutate(con.y = factor(ifelse(contrib.years<20, "less than 20 years",
-                                                          ifelse(contrib.years<40, "20-40 years",
-                                                                 "more than 40 years"))))
-  ## pension size
-  retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
-  
-  ## car variable
-  retire <- retire %>% mutate(car= factor(ifelse(car=="no car", "no car","owns car(s)")))
-  retire <- within(retire, car <- relevel(car, ref = "owns car(s)"))
-  
-  ## And the household size variable
-  retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only",ifelse(NMIEM<=7, "small household","large household"))))
-  retire <- within(retire, hh <- relevel(hh, ref = "with partner only"))
-  
-  ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
-  
-  
+
   
   ## 3.2.2 Two survival models for men and women
+  # To account for the different age at death distribution as well as the different life course trajectories,
+  # the hazards of dying for the two genders will estimated separately in two models
   
-  ## male
-  cox.all.a <- coxph(Surv(time=age, 
+  ## male population
+  cox.male.a <- coxph(Surv(time=age, 
                           time2 =age.exit,
-                          event = event) ~ pensize + EDU + con.y + ret.age.c + FNAC + ECIVIL + HousReg + 
-                          car + hh,
+                          event = event, type = "counting") ~ pensize + EDU + con.y + ret.age.c + FNAC + civilst +
+                          HousReg + hh,
                           data=subset(retire, sex=="male"))
   
-  ## female
-  cox.all.b <- coxph(Surv(time=age, 
+  ## female population
+  cox.female.b <- coxph(Surv(time=age, 
                           time2 =age.exit,
-                          event = event) ~ pensize + EDU + con.y + ret.age.c + FNAC + ECIVIL + HousReg + 
-                          car + hh,
+                          event = event) ~ pensize + EDU + con.y + ret.age.c + FNAC + civilst +
+                          HousReg + hh,
                           data=subset(retire, sex=="female"))
   
-  summary(cox.all.a)
-  cox.zph( cox.all.a)
-  summary(cox.all.b)
-  cox.zph( cox.all.b)
+  summary(cox.male.a)
+  cox.zph( cox.male.a)
+  summary(cox.female.b)
+  cox.zph( cox.female.b)
   
   
   
   
   
   
-  ## 3.2.3 Stratified models (= assumes different baselines)
+  ## 3.2.3 Stratified Cox Model
+  # As alternative to the separate models we apply a stratified model which allows to account for the different
+  # baseline mortality of the two sexes - for the sake of visibility the other model is prefered
   
-  cox.all.1 <- coxph(SO ~ pensize + EDU + con.y + ret.age.c + FNAC + ECIVIL + HousReg + car + hh + strata(sex)
+  cox.strat.1 <- coxph(Surv(time=age, 
+                            time2 =age.exit,
+                            event = event) ~ pensize + EDU + con.y + ret.age.c + FNAC + civilst +
+                            HousReg + hh + strata(sex)
                      , data=retire)
-  summary(cox.all.1)
-  cox.zph(cox.all.1)
+  summary(cox.strat.1)
+  cox.zph(cox.strat.1)
   
-  
+  #### NEW!!! Strong income effects in both models!!! In the right direction
   
   
   
@@ -616,22 +641,27 @@
   
   ret.separate <- lapply(split(retire, retire$sex),
                          FUN = function(DF) {
-                           
-                           coxph(SO ~ pensize + ESREAL + con.y + ret.age.c + FNAC + ECIVIL + HousReg + car + hh, retire)
+                           coxph(Surv(time=age, 
+                                      time2 =age.exit,
+                                      event = event) ~ pensize + EDU + con.y + ret.age.c + FNAC + civilst +
+                                      HousReg + hh, retire)
                          })
   ret.separate
   
   ## 3.2.4 Model including interaction effects
-  ret.interaction.sex <- coxph(formula = SO ~ (pensize + ESREAL + contrib.y.c + ret.age.c + FNAC + ECIVIL + HousReg + car)*sex - sex + strata(sex),
+  ret.interaction.sex <- coxph(formula = Surv(time=age, 
+                                              time2 =age.exit,
+                                              event = event) ~ (pensize + EDU + con.y + ret.age.c + FNAC + civilst +
+                                                                  HousReg + hh)*sex - sex + strata(sex),
                                data    = retire,
                                ties    = c("efron","breslow","exact")[1])
   ret.interaction.sex
   
   ### Compare the stratified model to the interaction model - (ANOvA)
-  anova(ret.interaction.sex, cox.all.1)
+  anova(ret.interaction.sex, cox.strat.1)
   ###           loglik   Chisq Df P(>|Chi|)    
-  ### Model1   -897934                        
-  ### Model2   -897996  125.26 21 < 2.2e-16 ***
+  ### Model1 -896571                        
+  ### Model2 -896619 96.213 12 3.109e-15 ***
   ### This model is not statistically significantly different from the no interaction model at the 0.05 level, 
   ### thus, we conclude that the model without interaction is adequate.
   
@@ -639,7 +669,7 @@
   
   ### ------------------------------------------------------------------------------------------------- ###
   
-  ### Test the flexible parametric models ... is still in progress!!!! ... not finished yet!!!
+  ### Test the flexible parametric models
   
   ## check distribution
   library(fitdistrplus)
@@ -649,49 +679,71 @@
   #### Flexible parametric models
   
   library(flexsurv)
+  # library(grofit)
   
-    # ## ignores the strata function => separate analysis for men and women
-    # flex.cox <- flexsurvreg(formula = SO ~ pensize + ESREAL + contrib.y.c + ret.age.c + 
-    #                         FNAC + ECIVIL + HousReg + car + strata(sex), data = retire, dist="gompertz", cl = 0.95)
+  ### The flexsurvreg function ignores the strata function => separate analysis for men and women
+    
+  ## f(t) - cumulative distribution of deaths over time
   
- ## male
-  ret.m <- retire %>% filter(sex=="male")
-  tbl_df(ret.m)
-  str(ret.m)
-  flex.cox.m <- flexsurvreg(formula = SO ~ pensize + ESREAL + contrib.y.c + ret.age.c + 
-                            FNAC + ECIVIL + HousReg + car, data = ret.m, dist="gompertz", cl = 0.95)
- ## female
-  ret.m <- retire %>% filter(sex=="female")
-  flex.cox.f <- flexsurvreg(formula = SO ~ pensize + ESREAL + contrib.y.c + ret.age.c + 
-                              FNAC + ECIVIL + HousReg + car, data = ret.f, dist="gompertz", cl = 0.95)
+  # check distribution
+  
+  survfit.coxph(cox.male.a,newdata=)
+ 
+  # x <- 1:30
+  # y <- gompertz(x, 10, 2, 5)
+  # plot(x,y)
+  
+  
+  ## First model with only pension size
+  flex.ph.1 <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = retire, dist="gompertz")
+  
+
+  ## separate model for the male population -  only pension size
+ 
+  flex.m.pen <- flexsurvreg(formula = Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="male"), 
+                              dist="gompertz")
+  
+  
+  ## full flexible parametric model for the male population
+  
+ flex.m <- flexsurvreg(formula = Surv(time=age,time2=age.exit, event=event) ~ pensize + EDU + con.y + ret.age.c + 
+                          FNAC + ECIVIL + HousReg + car + hh, data = subset(retire, sex=="male"), 
+                          dist="gompertz")
+  
+ ## Flexible parametric model for the female population
+  flex.f.pen <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="female"), 
+                            dist="gompertz")
   
   ### ------------------------------------------------------------------------------------------------- ###   
+  
+  ### clean up one more time
+  rm(cox.all.a,cox.all.b,cox.male.a,flex.ph.1,km2.a1,km2.b1,km2.p,km2b, ret.interaction.sex, ret.separate,km2.pb,
+     flex.m.pen)
   
   ### 4. Output Tables
   
   
   ## 4.1. Stratified Complete Model
   
-  stargazer(cox.all.1, title="Full model",no.space=F, 
-            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-            covariate.labels=c("1000-1999  Eur/month","$<$ 500 Eur/month","$>$ 2000 Eur/month",
-                               "no formal degree","Primary Ed.","Secondary Ed.",
-                               "Tertiary Ed.","$<$ 20 y. contrib.", "$>$ 40 y. contrib.","in time ret.",
-                               "late ret.", "birth year (cohort)","single",
-                               "widowed", "divorced","other regime", "rent", "2 vehicles",
-                               "$>$ 2 vehicles","no vehicles"), single.row=TRUE, apply.coef = exp)
+  # stargazer(cox.all.1, title="Full model",no.space=F, 
+  #           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+  #           covariate.labels=c("1000-1999  Eur/month","$<$ 500 Eur/month","$>$ 2000 Eur/month",
+  #                              "no formal degree","Primary Ed.","Secondary Ed.",
+  #                              "Tertiary Ed.","$<$ 20 y. contrib.", "$>$ 40 y. contrib.","in time ret.",
+  #                              "late ret.", "birth year (cohort)","single",
+  #                              "widowed", "divorced","other regime", "rent", "2 vehicles",
+  #                              "$>$ 2 vehicles","no vehicles"), single.row=TRUE, apply.coef = exp)
 
 
   
   ## 4.1. Separate Models
   
-  stargazer(cox.all.a,cox.all.b, title="Cox PH Model",no.space=F, 
+  stargazer(cox.male.a,cox.female.b, title="Cox PH Model",no.space=F, 
             ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
             covariate.labels=c("1000-1999  Eur/month","500-999 Eur/month","$<$ 500 Eur/month",
                                "Secondary/Tertiary Ed.","$<$ 20 y. contrib.","$>$ 40 y. contrib.",
-                               "in time ret.","late ret.", "birth year (cohort)","married",
-                               "widowed", "divorced","own house/apt.","rent","no vehicles",
-                               "large household","small household"), single.row=TRUE, apply.coef = exp)
+                               "in time ret.","late ret.", "birth year (cohort)","not married",
+                               "own house/apt.","couple hh"), single.row=TRUE, apply.coef = exp)
   
   # stargazer(cox.all.b, title="Cox PH Model - male population",no.space=F, 
   #           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
