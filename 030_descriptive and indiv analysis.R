@@ -68,6 +68,7 @@
    scale_fill_discrete(name = "")
  ## clear concentration at the older ages
  
+ 
  ################# 
  #################
  
@@ -363,6 +364,7 @@
     
   km2.p          # note: logrank test not possible for left truncated data
   
+  
   ### cumulative distribution function
   
     km2.p <- dplyr::union(km2.p, km2.pb) %>% 
@@ -489,8 +491,46 @@
   # delete the help files
    rm(KM_SEX.a1,KM_SEX.a2,KM_SEX.a3,KM_SEX.a4, KM_SEX.b1, KM_SEX.b2, KM_SEX.b3, KM_SEX.b4, km4.a1,  km4.a2,
      km4.a3,  km4.a4, km4.b1,  km4.b2,  km4.b3,  km4.b4)
+   
+   ##--------------------------------------
+   ## A few descriptive tests to see why the women with less than 500 fluctutate so much
+   
+   table(retire$sex,retire$pensize)
   
-  
+   table(retire$event[retire$pensize=="less than 500 Euro"],retire$sex[retire$pensize=="less than 500 Euro"])
+   
+
+   # compare entry ... 
+    retire %>% filter(pensize=="less than 500 Euro") %>% 
+       ggplot(aes(x=ret.age))  +
+      geom_histogram(bins=50) +
+      facet_grid(. ~ sex)     +
+      theme_minimal()
+   
+   # with actual and ... 
+    retire %>% filter(pensize=="less than 500 Euro") %>% 
+       ggplot(aes(x=age)) +
+       geom_histogram(bins=50) +
+       facet_grid(. ~ sex)
+   # with exit age
+    retire %>% filter(pensize=="less than 500 Euro") %>% 
+       ggplot(aes(x=age.exit, fill=exit)) +
+       geom_histogram(bins=50) +
+       labs(fill="")+
+       facet_grid(. ~ sex)
+   
+   # Period effects
+    retire %>% filter(pensize=="less than 500 Euro") %>% 
+       ggplot(aes(x=start.date)) +
+       geom_histogram(bins=50) +
+       facet_grid(. ~ sex)
+   
+   # how big is the share of early retirement entries
+   round(prop.table(table(retire$ret.age.c[retire$pensize=="less than 500 Euro"])), digits = 3)
+   
+   ##--------------------------------------
+   
+   
   ### -------------------------------------------------------- ###
   # 3.2.5 sex/education - see there non parametric differences
   ### -------------------------------------------------------- ###
