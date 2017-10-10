@@ -3,11 +3,11 @@
 #### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ####
 
 ##### 1. Study population
-  ### 1.1. Age limits for the elderly population
-  ### 1.3  Event variable
+  ### 1.1 Age limits for the elderly population
 ##### 2. Preparing the main variables for the analysis
-  ### 2.1. sex and pension size
-  ### 2.2. Independent categorical variables
+  ### 2.1 event variable
+  ### 2.2 sex and pension size
+  ### 2.3 Independent categorical variables
 ##### 3. Save the data set for the analysis step
 
 
@@ -66,11 +66,11 @@ sscc <- sscc %>% mutate(ff = ifelse(!is.na(start.date_Disability) & start.date_D
 ## ---------- ##
 ## Retirement
 
-summary(retire$start.date_Retirement)
+summary(sscc$start.date_Retirement)
 # Minimum age at retirement = 1965 
 # - oldest individuals reached age 65 in 1981
-retire %>% mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% count(tt)
-# 958 individuals of the oldest cohort in 2011 have retired "early"
+sscc %>% mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% count(tt)
+# 2753 individuals of the oldest cohort in 2011 have retired "early"
 
 
 ##### 1.2. Creating the working dataset
@@ -99,7 +99,10 @@ retire <- sscc %>%
   ## There often problems with the very old individuals (data errors in combination with small case numbers)
   filter(entry.age.r<=95) %>% 
   ## the same applies to the cases who are 60 or younger (oriented at the legal early retirement age 61)
-  filter(entry.age.r>=61)
+  filter(entry.age.r>=61) %>% 
+  ## Furthermore everybody who receives a disability pension will be marked
+  mutate(DIS = ifelse(!is.na(start.date_Disability),1,0))
+
 
            ### leaves us with 854450 individuals
            
@@ -107,6 +110,8 @@ summary(retire$entry.age.r)
 hist(retire$entry.age.r,breaks=34)
 #     Min. 1st Qu.  Median    Mean  3rd Qu.     Max. 
 #    61.00   65.61   70.96   72.47   77.96   95.00
+# The distribution of entry ages looks reasonable - especially the high number of 65 years old 
+# where disabled people could only enter with age 65 (there were 5 years where)
   
                 ##   9827 cases who retired earlier than 61
   
@@ -120,13 +125,7 @@ hist(retire$entry.age.r,breaks=34)
         summary(retire$age2011)
         hist(retire$age2011, breaks=37)
         ## looks like cut of a population pyramid (good!)
-        
-        # age at entry to retirement
-        retire %>% mutate(age.ret = start.date_Retirement-FNAC) %>% 
-          ggplot(aes(x=age.ret)) +
-          geom_histogram(bins = 37)
-        ### Majority of entries to retirement at age 65 - substantial number of people enter before
-        
+
         # age at exit (from the new "data.out" variable)
         retire %>% mutate(age.exit = data.out-FNAC) %>% 
           ggplot(aes(x=age.exit, fill=cause)) +
@@ -138,53 +137,198 @@ hist(retire$entry.age.r,breaks=34)
         table(retire$end.cause2)   ## Social security information
         
         #       C      CD        D 
-        #  706164     50 148236 
+        #  706157      44   148184 
         
         table(retire$cause)        ##  
         
         #          death   out.migration end.observation 
-        #         147644            4564          702242
+        #         147586            4562          702237
         
         table(retire$end.cause2,retire$cause)
         
         ##        death  out.migration end.observation
-        ##    C       0          4090          702074
-        ##   CD      47             2               1
-        ##    D  147597           472             167
+        ##  C       0          4088          702069
+        ## CD      41             2               1
+        ##  D  147545           472             167
         
         ### Only a few cases are not consistent in both data sources
         ### Base source for further proceeding is the information from the Longevity FU
         
         round(prop.table(table(retire$cause)),digits = 3)
-        
-### 1.4. Create an event variable where outmigration translate to a right censoring
-        
-        retire <- retire %>% mutate(event = as.numeric(ifelse(cause=="death",1,0)))
-        
 
-##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #####                
+        
+##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #####                  
 
-##### 2.1 Individual Entry Age
         
-        ### small test of variables where the disability entry follows the entry to retirement
-        retire %>% mutate(ay = ifelse(years.start.follow_Disability>years.start.follow_Retirement,TRUE,FALSE)) %>% 
-          count(ay)
-        # 269 case have a later disability then retirement entry - 1944 of the ones who retire 
-        # were disabled at some point earlier
-        # There is additional potential for confusion before age 65 since there is no indication about a) the degree
-        # of disability (did they continue working etc.) and b) it is unknown when somebody who is disabled has entered
-        # retirement. This will make the entry age variable obsolete but introduces information on disability.
-        # - The entry age should be set to 65 -
+##### 2.1 Create an event variable where outmigration translate to a right censoring
         
-##### 2.2 Individual Entry Age
+retire <- retire %>% mutate(event = as.numeric(ifelse(cause=="death",1,0))) %>% 
+          ##### 2.2 Individual Exit Age  - age at death or censorship
+          mutate(exit.age = data.out - FNAC)
         
+          summary(retire$exit.age)
+          
+          #    Min.  1st Qu.  Median    Mean 3rd Qu.    Max. 
+          #   61.01    70.22   75.73   76.54   82.38   99.99
         
 ##### 2.3 Sex and Pensionsize
         
 
       table(retire$SEXO)
-        retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
+retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
       
-        
+   ### Retirement income
       summary(retire$income_Retirement)
-      
+      summary(retire$income_Disability)
+      retire %>% mutate(tt = ifelse(income_Disability>0 & income_Retirement!=0,T,F)) %>% count(tt)
+        # 2210 receive disability and retirement income
+        
+        # --- test
+        kk <- subset(retire,income_Disability>0 & income_Retirement!=0)
+        hist(kk$age2011)
+        table(kk$SEXO)
+        table(kk$ESREAL5)
+        
+        hist(kk$income_Retirement)
+        hist(kk$income_Disabilit)
+        kk %>% mutate(mm = ifelse(start.date_Disability<start.date_Retirement,T,F)) %>% count(mm)  
+        # majority of these cases has an entry to retirement after they have received a disability pension
+        #
+        # cases will be treated as follows: they will be marked with a disability marker and their income will be
+        # set to their retirement pension
+
+### Income Variable    
+retire <- retire %>% mutate(INCOME = ifelse(income_Retirement>0,income_Retirement,
+                                            ifelse(income_Disability>0,income_Disability,0))) %>% 
+          ## Now to include widowhood pension as additional income source
+          mutate(INC.TOT = INCOME+income_Widowhood) %>%
+          ## But exclude everybody who just has received a widowhood pension
+          ## These people will enter in the second part of the analysis - theoretically don´t have an income
+          ## which is related to their life time employment activity
+          filter(income_Disability!=0 | income_Retirement!=0)
+ 
+
+ summary(retire$INCOME)
+ hist(retire$INCOME)
+ summary(retire$INC.TOT)
+ hist(retire$INC.TOT)
+
+  ### Transform it into a categorical variable
+retire <- retire %>% mutate(pensize = factor(ifelse(retire$INC.TOT<650,"less than 650 Euro",
+                                                     ifelse(retire$INC.TOT<1000, "650-999 Euro",
+                                                            ifelse(retire$INC.TOT<2000, "1000-1999 Euro", "more than 2000 Euro")))))
+ ## change reference for the pension size variable to the highest income category
+ retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
+ 
+### 2.3 Independent categorical variables
+ 
+ # ------------------- #
+ # Contribution period #
+ # ------------------- #
+ 
+ hist(retire$contrib.years_Retirement)
+ summary(retire$contrib.years_Retirement)
+ # problem: how much did the individuals with a disability contributed
+ 
+ retire <- retire %>% 
+   ## Extract the 40 cases with more than 60 years of contribution (15-75,20-80 cases are highly rare already)
+   filter(contrib.years_Retirement<=60) %>% 
+   ## also extract the 22061 cases with zero years of contribution will be excluded
+   filter(contrib.years_Retirement>=0.1) %>% 
+   ## create a factor variable
+   mutate(contrib.years = as.numeric(contrib.years_Retirement)) %>% 
+   mutate(contrib.years = factor(ifelse(contrib.years<20, "less than 20 years",
+                                ifelse(contrib.years<41, "20-40 years",
+                                       "more than 40 years"))))
+ 
+ # ------------------- #
+ # EDUCATION           #
+ # ------------------- #
+ 
+ table(retire$ESREAL5)
+ ## collapse categories incomplete and illiterate
+ 
+ retire$ESREAL5<- revalue (retire$ESREAL5, c("Illiterate"="No or Incomplete Educ.", "Without studies"="No or Incomplete Educ.",
+                                   "Primary Educ."="Primary Educ.", "Secondary Educ."="Secondary Educ.",
+                                   "Tertiary Educ."="Tertiary Educ."))
+ 
+ retire <- within(retire, ESREAL5 <- relevel(ESREAL5, ref = "No or Incomplete Educ."))
+ round(prop.table(table(retire$ESREAL5)), digits = 2)
+ 
+ # ------------------- #
+ # CIVIL STATUS        #
+ # ------------------- #
+table(retire$cohab2002)
+table(retire$ECIVIL)
+table(retire$cohab2011)
+table(retire$ECIVIL,retire$cohab2002)
+
+### Create a variable with the widowhood information from 2001 + 2011 and the cohabitation
+
+retire <- retire %>% mutate(cohab2011 = ifelse(cohab2011==TRUE,T,F)) %>% 
+          mutate(civil.status = factor(ifelse(retire$ECIVIL=="Widower" | !is.na(start.date_Widowhood)<=2011,
+                                                         "widowed",
+                                                         ifelse(retire$ECIVIL=="Married" & cohab2011==TRUE,"married",
+                                                         "other forms"))))
+retire$civil.status[is.na(retire$civil.status)] <- "other forms"
+round(prop.table(table(retire$civil.status)),digits=2)
+
+## This way of coding is chosen to assure to have a reliable information on the civil state in 2011
+## It is possible that we exclude some married individuals who are not cohabitating (LAT relationships)
+
+# -------------------------- #
+# Intime vs. Late Retirement #
+# -------------------------- #
+
+# ----------------------- #
+# Car / Mobility variable #
+# ----------------------- #
+table(retire$car)
+retire <- retire %>% mutate(mobil = factor(ifelse(car!="no car","car(s) available", "no car available")))
+round(prop.table(table(retire$mobil)),digits = 2)
+
+# ----------------------- #
+# Household size          #
+# ----------------------- #
+retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
+retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
+
+
+###### 3. Small checks and saving
+
+### --------------------- ###  
+### Scanning the data     ###
+### Visual intuitive test ###
+### --------------------- ###
+
+## visualizing education/pension income
+  retire %>%  ggplot(aes(x=INC.TOT, fill=ESREAL5)) +
+  geom_histogram(bins = 20)+
+  labs(color="")+
+  theme_bw()  
+  
+## Event distribution
+  
+  # by sex
+  retire %>% mutate(event.x= as.factor(ifelse(event==1,"death","censor"))) %>% 
+  ggplot(aes(x=SEXO,fill=event.x)) +
+  geom_bar(stat = "count")
+  
+  # the common contribution: more male deaths in these age groups
+  
+  # by education 
+  round(100*(prop.table(table(retire$event, retire$ESREAL5),2)),digits = 3)
+  retire %>% mutate(event.x= as.factor(ifelse(event==1,"death","censor"))) %>% 
+    ggplot(aes(x=ESREAL5,fill=event.x)) +
+    geom_bar(stat = "count")
+ 
+  # by pension size 
+  round(prop.table(table(retire$event,retire$pensize),2),digits = 3) # column percentage
+  # income gradient visible
+  
+##### 3.2 Save prepared data set
+  
+  save(retire, file='031_RETIND.RData')
+  
+  rm()
+  
