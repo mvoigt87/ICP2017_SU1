@@ -304,7 +304,7 @@ rm(km2.p,km2.a1, km2.b1, km2.pb)
     # ----------------------------- 
     # Survival curves run almost perfectly parallel for most of the time + slight gradient (Tertiary on top)
     # ----------------------------- 
-rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
+rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
     
     
 ### ------------------------------------ ###
@@ -409,14 +409,14 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   ### ------------------------------------------------------------------------------------------------- ###  
   
   
-##### 3.2. Individual level survival regression analysis
+##### 3. Individual level survival regression analysis
   
   
      ## change the reference for some categorical variables
      retire <- within(retire, HousReg <- relevel(HousReg, ref = "Other form"))
 
    
-## 3.2.1 Standard Cox Regression with only pension size and contribution and sex as main variables  
+## 3.3.1 Standard Cox Regression with only pension size and contribution and sex as main variables  
   cox.pen.1 <- coxph(Surv(time=entry.age.r,
                           time2=exit.age,
                           event=event)~pensize, data = retire)
@@ -434,9 +434,9 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   
 
 ### ------------------------------------------------------------------------------------------------- ###  
-
+### ------------------------------------------------------------------------------------------------- ###  
   
-### 3.2.2 Two survival models for men and women
+### 3.3.2 Two survival models for men and women
   # To account for the different age at death distribution as well as the different life course trajectories,
   # the hazards of dying for the two genders will estimated separately in two models
   
@@ -464,9 +464,10 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   # ----------------------------- 
   
   
+  #### Testing if a stratified model or an interaction model do fit the data better #####
   
-  
-  ## 3.2.3 Stratified Cox Model
+  ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+  ## 3.3.4 Stratified Cox Model
   # As alternative to the separate models we apply a stratified model which allows to account for the different
   # baseline mortality of the two sexes - for the sake of visibility the other model is prefered
   
@@ -478,28 +479,6 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   summary(cox.strat.1)
   cox.zph(cox.strat.1)
   
-  #### NEW!!! Strong income effects in both models!!! In the right direction
-  
-  
-  
-  
-  
-  # check the log-log-survival curves for sexes
-  # km2 <- survfit(SO~sex, data = retire)
-  # km2
-  # km2.p <- tidy(km2) %>% mutate(strata = revalue(strata,c("sex=female"="female","sex=male"="male"))) %>%
-  #   mutate(logkm = -ln(estimate)) %>% 
-  #   ggplot() +
-  #   geom_step(mapping = aes(x=time, y=loglogkm, color=strata))         +
-  #   scale_y_continuous(name = "Survival Probability")                  +
-  #   scale_x_continuous(name = "Age")                                   +
-  #   scale_colour_manual(values = c("orange", "darkgrey"), name="")     +
-  #   theme_minimal()
-  # 
-  # km2.p          # note: logrank test not possible for left truncated data
-  # rm(km2, km2.p)
-  
-
   ## 3.2.3 Separate models for females and males 
   ## (Code based on Kleinbaum: http://rstudio-pubs-static.s3.amazonaws.com/5096_0880aaaf0df94f3b8533a1c024738246.html)
   
@@ -529,64 +508,44 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   ### This model is not statistically significantly different from the no interaction model at the 0.05 level, 
   ### thus, we conclude that the model without interaction is adequate.
   
-  ### !!! The stratified model it is !!!
- 
+  ## !!! The stratified model it is !!! - to better show the differences two separate models were chosen
+  ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ## 
+  
+  ### 3.4 Further model and assumption test
+  
+  library(survminer)
+  
+##--- male population 
+  mm <- cox.zph(cox.male.a)
+  ff <- cox.zph(cox.female.b)
+  
+  # Proportional Hazards Assumption - pensionsize variables
+  ggcoxzph(mm,resid=T, se=T, var=c(1:3), caption = "Schoenfeld Residuals by time",
+           ggtheme = theme_minimal(),font.main = 12)
+   # assumption is only hardly met by the group who receives 1000-1999 Euro per month
+  
+  # Proportional Hazards Assumption - rest
+  ggcoxzph(mm,resid=T, se=T, var=c(4:13), caption = "Schoenfeld Residuals by time",
+           ggtheme = theme_minimal(),font.main = 12) 
+   # assumption is not met for the secondary and primary education group and the partner variable
+  
+  # residual check
+  ggcoxdiagnostics(cox.male.a,type = "schoenfeld")
+  
+##--- female population   
+  # Proportional Hazards Assumption
+  ggcoxzph(ff,resid=T, se=T, var = c(1:3), caption = "Schoenfeld Residuals by time",
+           ggtheme = theme_minimal(),font.main = 12)
+  
+    # PHA is not met in the analysis of pension size for women
+  
+  ggcoxzph(ff,resid=T, se=T, var = c(4:13), caption = "Schoenfeld Residuals by time",
+           ggtheme = theme_minimal(),font.main = 12)
+    # PHA is met for secondary education, no car, and the civil statuses
   
   
-   
   ### ------------------------------------------------------------------------------------------------- ###
-  
-  ### Test the flexible parametric models
-  
-  ## check distribution
-  library(fitdistrplus)
-  descdist(KM_SEX$estimate[KM_SEX$sex=="male"], discrete = FALSE)
-  descdist(KM_SEX$estimate[KM_SEX$sex=="female"], discrete = FALSE)
-  
-  #### Flexible parametric models
-  
-  library(flexsurv)
-  # library(grofit)
-  
-  ### The flexsurvreg function ignores the strata function => separate analysis for men and women
-    
-  ## f(t) - cumulative distribution of deaths over time
-  
-  # check distribution
-  
-  survfit.coxph(cox.male.a,newdata=)
- 
-  # x <- 1:30
-  # y <- gompertz(x, 10, 2, 5)
-  # plot(x,y)
-  
-  
-  ## First model with only pension size
-  flex.ph.1 <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = retire, dist="gompertz")
-  
-
-  ## separate model for the male population -  only pension size
- 
-  flex.m.pen <- flexsurvreg(formula = Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="male"), 
-                              dist="gompertz")
-  
-  
-  ## full flexible parametric model for the male population
-  
- flex.m <- flexsurvreg(formula = Surv(time=age,time2=age.exit, event=event) ~ pensize + EDU + con.y + ret.age.c + 
-                          FNAC + ECIVIL + HousReg + car + hh, data = subset(retire, sex=="male"), 
-                          dist="gompertz")
-  
- ## Flexible parametric model for the female population
-  flex.f.pen <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="female"), 
-                            dist="gompertz")
-  
-  ### ------------------------------------------------------------------------------------------------- ###   
-  
-  ### clean up one more time
-  rm(cox.all.a,cox.all.b,cox.male.a,flex.ph.1,km2.a1,km2.b1,km2.p,km2b, ret.interaction.sex, ret.separate,km2.pb,
-     flex.m.pen)
-  
+  ### ------------------------------------------------------------------------------------------------- ###
   ### 4. Output Tables
   
   
@@ -607,85 +566,77 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4).
   
   stargazer(cox.male.a,cox.female.b, title="Cox PH Model",no.space=F, 
             ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-            covariate.labels=c("1000-1999  Eur/month","500-999 Eur/month","$<$ 500 Eur/month",
-                               "Secondary/Tertiary Ed.","$<$ 20 y. contrib.","$>$ 40 y. contrib.",
-                               "in time ret.","late ret.", "birth year (cohort)","not married",
-                               "own house/apt.","couple hh"), single.row=TRUE, apply.coef = exp)
+            covariate.labels=c("1000-1999  Eur/month","650-999 Eur/month","$<$ 650 Eur/month",
+                               "Tertiary Ed.","Secondary Ed.","Primary Ed.","Birth year (cohort)",
+                               "Not married","Widowed","No car avail." ,"Owns house/apt.",
+                               "Rents house/apt.","couple hh"),
+            single.row=TRUE, apply.coef = exp)
   
-  # stargazer(cox.all.b, title="Cox PH Model - male population",no.space=F, 
-  #           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-  #           covariate.labels=c("1000-1999  Eur/month","500-999 Eur/month","$<$ 500 Eur/month",
-  #                              "Secondary/Tertiary Ed.","$<$ 20 y. contrib.","$>$ 40 y. contrib.",
-  #                              "in time ret.","late ret.", "birth year (cohort)","married",
-  #                              "widowed", "divorced","own house/apt.","rent","no vehicles",
-  #                              "large household","small household"), single.row=TRUE)
-  
-  
-  ## 4.1. Flexible Parametric Model 
-  
-  stargazer(flex.cox, title="Flexible paramtric model",no.space=F, 
-            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-            covariate.labels=c("500-999  Eur/month","$<$ 500 Eur/month","$>$ 2000 Eur/month",
-                               "no formal degree","Primary Ed.","Secondary Ed.",
-                               "Tertiary Ed.","26-40 y. contrib.","$<$ 15 y. contrib.",
-                               "> 40 y. contrib.","in time ret.","late ret.", "birth year (cohort)","single",
-                               "widowed", "divorced","rent","other regime", "2 vehicles",
-                               "$>$ 2 vehicles","no vehicles"), single.row=TRUE)
- 
 
- rm(cox.all.1)
+  ## 4.2. Different form of display - Results in a Forest Plot
   
+  # male population
+  ggforest(cox.male.a, plot.title = "", ggtheme = theme_minimal(),xlab = "Hazard Ratio")
   
- 
- 
- 
- 
- 
- ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
- ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
- 
- 
- 
- ## For a partner variable which starts at the time of entry to the risk set 2011
- 
- cbind(colnames(retire))
- cbind(colnames(parned.c2002))
- 
- ### Join all individuals who have a married partner in 2011
- 
- part.R <- parned.c2002 %>% select(kID,FNAC) %>% mutate(GebJahr = FNAC) %>% select(-FNAC) %>% 
-   #  create a partner marker for the ones in the parned data
-   mutate(marstat = 1)
- 
- ### Bring them back together and create a partnership variable (married in 2011/not married in 2011)
- 
- # 1. Full Join command keeps all rows and all columns
- retire <- retire %>% full_join(part.R, by="kID")
- 
- # create the marital status variable for the full individual dataset and make a factor variable out of it
- retire <- retire %>% mutate(civilst = factor(ifelse(is.na(marstat),"not married","married"))) %>% 
-   ### drop the 2 unused variables
-   select(-GebJahr, -marstat) %>% 
-   ### and the cases we have no further information about (not originally in the "retire" data set)
-   filter(!is.na(end.date))
- 
- round(prop.table(table(retire$civilst)),digits = 2)
- 
- #     married     not married 
- #       0.89%           0.11%        ### looks ok!
- 
- round(prop.table(table(retire$civilst,retire$ECIVIL),2),digits = 2)
- 
- #               single married widowed divorced/sep
- #   married       0.00    0.98    0.00         0.00
- #   not married   1.00    0.02    1.00         1.00  ### Compared to 2002 only 2% of the sample seem
- ### to have lost their partner (divorce or widowed)
- #table(retire$ECIVIL[!is.na(retire$marstat)])
- 
- mean(retire$age[retire$civilst=="married"])       # 70.71 years
- mean(retire$age[retire$civilst=="not married"])   # 73.12 years
- 
- 
+  # female population
+  ggforest(cox.female.b,plot.title = "",ggtheme = theme_minimal(), xlab = "Hazard Ratio")
+  
+
  
  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+ ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+ 
+ ### Test the flexible parametric models
+ 
+ ## check distribution
+ library(fitdistrplus)
+ descdist(KM_SEX$estimate[KM_SEX$sex=="male"], discrete = FALSE)
+ descdist(KM_SEX$estimate[KM_SEX$sex=="female"], discrete = FALSE)
+ 
+ 
+ #### Flexible parametric models
+ 
+ library(flexsurv)
+ # library(grofit)
+ 
+ ### The flexsurvreg function ignores the strata function => separate analysis for men and women
+ 
+ ## f(t) - cumulative distribution of deaths over time
+ 
+ # check distribution
+ 
+ survfit.coxph(cox.male.a,newdata=)
+ 
+ # x <- 1:30
+ # y <- gompertz(x, 10, 2, 5)
+ # plot(x,y)
+ 
+ 
+ ## First model with only pension size
+ flex.ph.1 <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = retire, dist="gompertz")
+ 
+ 
+ ## separate model for the male population -  only pension size
+ 
+ flex.m.pen <- flexsurvreg(formula = Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="male"), 
+                           dist="gompertz")
+ 
+ 
+ ## full flexible parametric model for the male population
+ 
+ flex.m <- flexsurvreg(formula = Surv(time=age,time2=age.exit, event=event) ~ pensize + EDU + con.y + ret.age.c + 
+                         FNAC + ECIVIL + HousReg + car + hh, data = subset(retire, sex=="male"), 
+                       dist="gompertz")
+ 
+ ## Flexible parametric model for the female population
+ flex.f.pen <- flexsurvreg(formula =Surv(age, age.exit,event) ~ pensize, data = subset(retire, sex=="female"), 
+                           dist="gompertz")
+ 
+ ### ------------------------------------------------------------------------------------------------- ###   
+ 
+ ### clean up one more time
+ rm(cox.all.a,cox.all.b,cox.male.a,flex.ph.1,km2.a1,km2.b1,km2.p,km2b, ret.interaction.sex, ret.separate,km2.pb,
+    flex.m.pen)
+
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ## 
