@@ -21,6 +21,7 @@ load("031_RETIND.RData")
 library(reshape)
 library(tidyverse)
 library(survival)
+library(survminer)
 library(forcats)
 library(data.table)
 library(broom)
@@ -119,26 +120,32 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
    mutate(hhincome=ifelse(partner.death == 0,INCOME+INCOME_p,INC.TOT)) %>% 
    
    # 1.4.3 Edit variable number of household members
-   mutate(hh= factor(ifelse(NMIEM==2, "with partner only","large household")))
+   mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
  
   # -----------------------------  
- table(pen.coupl$hh)
-
+   table(pen.coupl$hh)
+    #  larger household with partner only 
+    #             91152             43269 
+    #               68%               32%
+  # -----------------------------
   # income variable 
- hist(pen.coupl$hhincome, breaks = 30)
+   hist(pen.coupl$hhincome, breaks = 30)
+  # -----------------------------  
  
- # distribution invites to look at 3 groups (less than 1000 Euro, 1000-1999, more then 2000)
+
+## 1.4.4 Distribution invites to look at 3 groups (less than 1000 Euro, 1000-1999, more then 2000)
  
- pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than 1000 Euro",
+ 
+pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than 1000 Euro",
                                                          ifelse(hhincome<=2000,"1000-2000 Euro","more than 2000 Euro"))))
  
- pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
+pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
  
- # -----------------------------  
+
  
-# 1.5 Age difference of the partners
+## 1.5 Age difference of the partners
  
- pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>% 
+pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>% 
    ## and as categorical variable (checked for minimum value)
    mutate(age.diff.c = as.factor(ifelse(age.diff < -10, ">10 y younger",
                                         ifelse(age.diff <= - 1,"1-10 y younger",
@@ -146,10 +153,10 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
                                                       ifelse(age.diff <= 10,"1-10 y older",
                                                              ">10 y older"))))))
  
- pen.coupl <- within(pen.coupl, age.diff.c <- relevel(age.diff.c, ref = "same age")) 
+pen.coupl <- within(pen.coupl, age.diff.c <- relevel(age.diff.c, ref = "same age")) 
 
 # -----------
- summary(pen.coupl$age.diff)     # minimum value -28.40
+ summary(pen.coupl$age.diff)     # minimum value -28.64
  
  pen.coupl %>% ggplot(aes(x=age.diff, fill=SEXO)) +
    geom_histogram(bins=50)+
@@ -161,11 +168,252 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
  
  # Edit partnerdeath variable
  table(pen.coupl$partner.death)
- pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
+pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
 
  # Partner education
- pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
+pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
+
 
  
+##### 2. Descriptive Statistics - Overview
+ 
+# 2.0 A factor variable for the event for easier descriptive analysis
+pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead"))) %>% 
+  # and for the partner
+  mutate(exit_p = factor(ifelse(event_p==0,"censored","death")))
+
+
+
+ ## 2.1 Event distribution
+ ## Could be different for this selective and smaller dataset
+ 
+ round(prop.table(table(pen.coupl$event,pen.coupl$event_p),2),digits = 3) # Column Percentage
+ # -----------------------------  
+ #         censor_p   dead_p
+ #  censor  0.916      0.833
+ #  dead    0.084      0.167
+ # -----------------------------  
+ 
+ 
+ ## visual exploring exit by age and partner age in 2011
+ pen.coupl %>% ggplot(aes(x=age2011,y=age2011_p)) +
+   geom_point(aes(color=exit)) +
+   scale_color_discrete(name = "") +
+   facet_grid(. ~ SEXO)     
+ 
+ ## and the death of the partner
+ pen.coupl %>% ggplot(aes(x=age2011,y=age2011_p)) +
+   geom_point(aes(color=exit_p)) +
+   scale_color_discrete(name = "") +
+   facet_grid(. ~ SEXO) 
+ 
+ 
+ ## 2.2 Sex Differences in Mortality
+ round(prop.table(table(pen.coupl$exit,pen.coupl$SEXO),2),digits = 2)    ## column percentage
+ # -----------------------------  
+ #           female   male
+ # censored   0.95%  0.86%
+ # dead       0.05%  0.14%
+ # -----------------------------
+ 
+ 
+ ## histogram of age at exit distribution
+ pen.coupl %>% ggplot(aes(x=exit.age,fill=exit))+
+   geom_histogram(bins=40)+
+   scale_fill_discrete(name = "") +
+   facet_grid(. ~ SEXO)   
+ 
+ 
+ ## 2.3. Differences in Mortality by education
+ round(prop.table(table(pen.coupl$exit,pen.coupl$ESREAL5),2),2)
+ round(prop.table(table(pen.coupl$exit,pen.coupl$ESREAL5_p),2),2) 
+ 
+ 
+ ##### ----------------------------------------------------------------------------------------------------- #####
+ 
+ ##### 4. Survival Analysis
+ 
+ ### 4.1. Kaplan Meier Survival Curves as graphic tests
+ 
+ ### 4.1.1 Global survival of married couples in Andalusia
+ 
+ KM1 <- survfit(coxph(Surv(time=entry.age.r,
+                           time2 = exit.age,
+                           event=event)~1, data = pen.coupl),type="kaplan-meier")
+ 
+ # -----------------------------  
+ #   records    n.max  n.start   events   median  0.95LCL  0.95UCL 
+ #  134421.0  39592.0    897.0  12344.0     86.8     86.7     87.0 
+ #  median and confidence interval values are higher than for the total population
+ # ----------------------------- 
+ 
+ ## graphical display
+ 
+ tidy(KM1) %>% ggplot(aes(x=time,y=estimate)) +
+   geom_step() +
+   theme_bw()
+ # -----------------------------  
+ # There is a leveling off at the highest ages - probably due to small case numbers 
+ # -----------------------------   
+
+ ### 4.1.2 KME by stratified by sex
+ 
+ # males
+ KM.S1 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,SEXO=="male")), type = "kaplan-meier")
+ # females
+ KM.S2 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,SEXO=="female")), type = "kaplan-meier")
+ 
+ km.male <- tidy(KM.S1) %>% select(time,estimate) %>% mutate(sex="male")
+ km.female <- tidy(KM.S2) %>% select(time,estimate) %>% mutate(sex="female")
+ 
+ km.sex <- union(km.male,km.female)
+ km.sex %>% ggplot(aes(x=time, y=estimate, color=sex)) +
+   geom_step() +
+   scale_y_continuous(name = "Survival Probability")                  +
+   scale_x_continuous(name = "Age")                                   +
+   xlim(60, 95)                                                       +
+   scale_color_manual(values = c("orange", "darkgrey"), name="")      +
+   theme_minimal()
+ 
+ # ----------------------------- 
+ # There are only a few cases at the highest ages (assumption: people who entered in their late 90s 
+ # (age at 2011) were mostly living without partner at the time of their entry - so we do not follow up so many of them)
+ # ----------------------------- 
+ 
+ 
+ #### 4.2 Cox PH Regression Models
+ 
+ # !! Shortened code - Trial code for covariate analysis in older file
+ # It can be assumed that the used covariates are tested and passed the test - others (like the room number were removed)
+ 
+ ## 4.2.1 Stratified Model
+ 
+ COX.STR <- coxph(Surv(time = entry.age.r,
+                       time2 = exit.age,
+                       event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                       contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh +
+                       strata(SEXO)
+                       ,data = pen.coupl)
+ summary(COX.STR)
+ ggforest(COX.STR)
+ 
+ # ----------------------------- 
+ # Similar to what have been observed before, the households with the minimum income have the strongest mortality
+ # disadvantage (an almost 4 times increased risk compared to the wealthiest). The effect of the loss of a partner
+ # and the disappearing education effect are especially worth to highlight
+ # ----------------------------- 
+ 
+ ## 4.2.2 Comparison with and interaction model
+ 
+ 
+ part.separate <- lapply(split(retire, retire$SEXO),
+                        FUN = function(DF) {
+                          coxph(Surv(time=entry.age.r,
+                                     time2=exit.age,
+                                     event=event) ~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                  contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh, pen.coupl)
+                        })
+ part.separate
+ 
+ ## 3.2.4 Model including interaction effects
+ part.interaction.sex <- coxph(formula = Surv(time=entry.age.r,
+                                             time2=exit.age,
+                                             event=event) ~ (HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + 
+                                                               age.diff.c + contrib.years_p + DIS_p + ESREAL5_p +  
+                                                               mobil + HousReg + hh)*SEXO - SEXO + strata(SEXO),
+                              data    = pen.coupl,
+                              ties    = c("efron","breslow","exact")[1])
+ part.interaction.sex
+ 
+ # ----------------------------- 
+ ### Compare the stratified model to the interaction model - (ANOvA)
+ anova(part.interaction.sex,  COX.STR)
+ 
+ #   loglik   Chisq  Df  P(>|Chi|)    
+ # 1 -107241                        
+ # 2 -107367  252.38 24  < 2.2e-16 ***
+ ### The stratified model is not statistically significantly different from the no interaction model at the 0.05 level, 
+ ### thus, we conclude that the model without interaction is adequate.
+ # -----------------------------
+ 
+ ##### 4.3 MAIN MODELS - SEPARATED COX PH MODELS
+ 
+ # Male population
+ COX.MALE <- coxph(Surv(time = entry.age.r,
+                        time2 = exit.age,
+                        event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                        contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh
+                        ,data = subset(pen.coupl,SEXO=="male"))
+ 
+ # Female population
+ COX.FEMALE <- coxph(Surv(time = entry.age.r,
+                        time2 = exit.age,
+                        event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                     contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh
+                   ,data = subset(pen.coupl,SEXO=="female"))
+ 
+ 
+ ##
+ summary(COX.MALE)
+ summary(COX.FEMALE)
+ 
+ ## PH Check
+ cox.zph(COX.MALE)
+ cox.zph(COX.FEMALE)
+ 
+ 
+ #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
+            #### Test CODE ####
+ 
+ # COX.STR.X <- coxph(Surv(time = entry.age.r,
+ #                       time2 = exit.age,
+ #                       event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+ #                    contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + pensize + pensize_p +
+ #                    strata(SEXO),
+ #                    data = pen.coupl)
+ 
+ 
+ # COX.MALE.X  <- coxph(Surv(time = entry.age.r,
+ #                                    time2 = exit.age,
+ #                                    event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+ #                                 contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + pensize + pensize_p, 
+ #                                 data = subset(pen.coupl,SEXO=="male"))
+ # 
+ # COX.FEMALE.X <- coxph(Surv(time = entry.age.r,
+ #                          time2 = exit.age,
+ #                          event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+ #                       contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + pensize + pensize_p, 
+ #                       data = subset(pen.coupl,SEXO=="female"))
+ # 
+ # summary(COX.MALE.X)
+ # summary(COX.FEMALE.X)
+ 
+ # -----------------------------
+ # Drastic Risk reduction dependent on the partners pension income for males and females, while the household income
+ # has a highly significant and expected (gradient)
+ # -----------------------------
+ 
+ 
+
+ #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
+ 
+ 
+ 
+ ##### 4. Model Output
+ 
+ stargazer(COX.MALE,COX.FEMALE, title="Cox PH Model -  Household Analysis",no.space=F, 
+           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+           covariate.labels=c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "$<$ 20 years contr.",
+                              "$>$ 40 years contr.", "Received Disability Pension", "Tertiary Educ.",
+                              "Secondary Educ.", "Primary Educ.", "Birth Cohort", "Lost Partner", "$>$10 years older",
+                              "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "parnter contr. $<$ 20 years",
+                              "partner contr. $>$ 40 years", "Disability partner", "Tertiary Educ. Partner",
+                              "Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
+                              "Rent House/Aptm.", "Lives only with Partner"),
+           single.row=TRUE, apply.coef = exp)
  
  
