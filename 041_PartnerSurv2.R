@@ -75,7 +75,7 @@ pen.coupl <- pen.coupl %>% filter(cohab2011==T)
  # 134421 individuals left
  # ----------------------------- 
 
-rm(r.test,part.R)
+rm(r.test,part.R, id.a, id.b)
 
 ### 1.2. Partner variables
 
@@ -142,7 +142,26 @@ pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than
 pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
  
 
+
+## 1.4.5 Breadwinner variable - who earns at least Euro more than the partner
+
+pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
+                                                 ifelse(INCOME<INCOME_p-50,"lower income","equal"))))
+
+round(prop.table(table(pen.coupl$main.earner)),digits = 2)
+round(prop.table(table(pen.coupl$main.earner,pen.coupl$SEXO),2),digits = 2)
+
+## For the model -  breadwinner variable
  
+pen.coupl <- pen.coupl %>% mutate(bw = factor(ifelse(INCOME>200+INCOME_p,"breadwinner","less or equal income")))
+
+                                                              
+pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
+round(prop.table(table(pen.coupl$bw, pen.coupl$SEXO),2), digits=2)
+
+### For men this effect could be interesting
+                                                              
+                                                              
 ## 1.5 Age difference of the partners
  
 pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>% 
@@ -346,14 +365,14 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  COX.MALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
                         event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                        contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh
+                                        contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
                         ,data = subset(pen.coupl,SEXO=="male"))
  
  # Female population
  COX.FEMALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
                         event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                     contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh
+                     contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
                    ,data = subset(pen.coupl,SEXO=="female"))
  
  
@@ -413,7 +432,12 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
                               "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "parnter contr. $<$ 20 years",
                               "partner contr. $>$ 40 years", "Disability partner", "Tertiary Educ. Partner",
                               "Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
-                              "Rent House/Aptm.", "Lives only with Partner"),
+                              "Rent House/Aptm.", "Lives only with Partner", "Breadwinner"),
            single.row=TRUE, apply.coef = exp)
+ 
+ 
+ #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
+ 
+
  
  

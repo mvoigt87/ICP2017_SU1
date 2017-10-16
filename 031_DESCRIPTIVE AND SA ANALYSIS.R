@@ -443,14 +443,14 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ## male population
   cox.male.a <- coxph(Surv(time=entry.age.r,
                            time2=exit.age,
-                           event=event) ~ pensize + ESREAL5 + FNAC + civil.status + mobil +
+                           event=event) ~ pensize + ESREAL5 + FNAC + DIS + civil.status + mobil +
                            HousReg + hh,
                           data=subset(retire, SEXO=="male"))
   
   ## female population
   cox.female.b <- coxph(Surv(time=entry.age.r,
                              time2=exit.age,
-                             event=event) ~ pensize + ESREAL5 + FNAC + civil.status + mobil +
+                             event=event) ~ pensize + ESREAL5 + FNAC + DIS + civil.status + mobil +
                              HousReg + hh,
                           data=subset(retire, SEXO=="female"))
   
@@ -486,7 +486,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                          FUN = function(DF) {
                            coxph(Surv(time=entry.age.r,
                                            time2=exit.age,
-                                           event=event) ~ pensize + ESREAL5 + FNAC + civil.status + mobil +
+                                           event=event) ~ pensize + ESREAL5 + FNAC + DIS + civil.status + mobil +
                                         HousReg + hh, retire)
                          })
   ret.separate
@@ -494,7 +494,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ## 3.2.4 Model including interaction effects
   ret.interaction.sex <- coxph(formula = Surv(time=entry.age.r,
                                               time2=exit.age,
-                                              event=event) ~ (pensize + ESREAL5 + FNAC + civil.status + mobil +
+                                              event=event) ~ (pensize + ESREAL5 + FNAC + DIS + civil.status + mobil +
                                                                 HousReg + hh)*SEXO - SEXO + strata(SEXO),
                                data    = retire,
                                ties    = c("efron","breslow","exact")[1])
@@ -567,9 +567,9 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   stargazer(cox.male.a,cox.female.b, title="Cox PH Model",no.space=F, 
             ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
             covariate.labels=c("1000-1999  Eur/month","650-999 Eur/month","$<$ 650 Eur/month",
-                               "Tertiary Ed.","Secondary Ed.","Primary Ed.","Birth year (cohort)",
+                               "Tertiary Ed.","Secondary Ed.","Primary Ed.","Birth year (cohort)", "Received Disability Pension",
                                "Not married","Widowed","No car avail." ,"Owns house/apt.",
-                               "Rents house/apt.","couple hh"),
+                               "Rents house/apt.","Lives only with partner"),
             single.row=TRUE, apply.coef = exp)
   
 
@@ -586,6 +586,8 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
  ##### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ######
+  
+  
  
  ### Test the flexible parametric models
  
