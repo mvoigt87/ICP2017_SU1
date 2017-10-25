@@ -145,7 +145,7 @@ pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Eur
 
 ## 1.4.5 Breadwinner variable - who earns at least Euro more than the partner
 
-pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
+  pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
                                                  ifelse(INCOME<INCOME_p-50,"lower income","equal"))))
 
 round(prop.table(table(pen.coupl$main.earner)),digits = 2)

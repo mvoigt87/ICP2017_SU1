@@ -573,10 +573,10 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
             single.row=TRUE, apply.coef = exp)
   
 
-  ## 4.2. Different form of display - Results in a Forest Plot
+  ## 4.2. Different form of display - Results in a Forest Plot - May be for the presentation
   
   # male population
-  ggforest(cox.male.a, plot.title = "", ggtheme = theme_minimal(),xlab = "Hazard Ratio")
+  ggforest(cox.male.a, plot.title = "", ggtheme = theme_minimal(),xlab = "Hazard Ratio",refLabel = "reference")
   
   # female population
   ggforest(cox.female.b,plot.title = "",ggtheme = theme_minimal(), xlab = "Hazard Ratio")
