@@ -270,3 +270,58 @@ head(LT.ESP.fem)
    scale_linetype_discrete(name = " ") +
    theme_bw()
 
+#### 4. Plot for presentation
+ 
+ ## add a help variable for shading the other countries out
+ 
+ GAP.TOT <- GAP.TOT %>% mutate(Test=ifelse(country=="Spain",T,F))
+ 
+ GAP.TOT %>% filter(Age == 0) %>% 
+   ggplot(aes(x = Year, y = GAP, color = country, alpha=Test)) +
+   theme(
+     legend.position = c(.95, .95),
+     legend.justification = c("right", "top"),
+     legend.box.just = "right",
+     legend.margin = margin(6, 6, 6, 6)
+   ) +
+   geom_line() +
+   # change colors to the more intutive understanding
+   scale_color_manual(values=c("green", "orange", "indianred1","navyblue"), name = "") +
+   # change x-axis breaks and y axis title
+   scale_x_continuous(breaks = c(1910,1930,1950,1970,1990,2010)) +
+   scale_y_continuous(name = "Sex gap in life expectancy at birth")   +
+   scale_alpha_discrete(range = c(0.35, 0.9), guide=FALSE) +
+
+   
+   theme_minimal()
+
+   
+   # 
+   # + theme(
+   #   legend.position = c(.95, .95),
+   #   legend.justification = c("right", "top"),
+   #   legend.box.just = "right",
+   #   legend.margin = margin(6, 6, 6, 6)
+   # )
+ 
+ 
+ #### Plot only for Spain
+ gapa <- GAP.TOT %>% filter(Age == 0) %>% mutate(Age=as.factor(Age)) %>% filter(country == "Spain")
+ gapb <- GAP.TOT %>% filter(Age == 65) %>% mutate(Age=as.factor(Age)) %>% filter(country == "Spain")
+ GAP.TOT.b <- bind_rows(gapa,gapb) %>% mutate(Test = ifelse(Age=="0",T,F)) 
+ 
+ #### Presentation Plot
+ 
+ GAP.TOT.b %>% 
+   ggplot(aes(x = Year, y = GAP, color=Age, alpha=Test)) +
+   geom_line() +
+   scale_color_manual(values=c("orange","navyblue"), name = "Age") +
+   scale_x_continuous(breaks = c(1910,1930,1950,1970,1990,2010)) +
+   scale_y_continuous(name = "Gap in Life Expectancy at Birth")   +
+   scale_alpha_discrete(range = c(0.95, 0.45), guide=FALSE)  +
+   theme_bw()
+   
+   
+
+ 
+ 
