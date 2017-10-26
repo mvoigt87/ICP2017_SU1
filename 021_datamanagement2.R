@@ -27,7 +27,7 @@ library(plyr)
 library(tidyverse)
 library(survival)
 library(forcats)
-# library(data.table)
+library(data.table)
 
 ##### Study population
   ### To answer how health differences in the retired population of Spain are determined by social inequalities,
@@ -72,6 +72,10 @@ summary(sscc$start.date_Retirement)
 sscc %>% mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% count(tt)
 # 2753 individuals of the oldest cohort in 2011 have retired "early"
 
+# count the disabled individuals who had worked and who did not
+as.data.table(sscc) -> sscc
+dcast(sscc[,.N,.(Retire=income_Retirement>0,Disability=income_Disability>0)], Retire~Disability)
+
 
 ##### 1.2. Creating the working dataset
 retire <- sscc %>% 
@@ -104,7 +108,7 @@ retire <- sscc %>%
   mutate(DIS = ifelse(!is.na(start.date_Disability),1,0))
 
 
-           ### leaves us with 854450 individuals
+           ### leaves us with 854385 individuals
            
 summary(retire$entry.age.r)  
 hist(retire$entry.age.r,breaks=34)
@@ -230,11 +234,15 @@ retire <- retire %>% mutate(pensize = factor(ifelse(retire$INC.TOT<650,"less tha
  summary(retire$contrib.years_Retirement)
  # problem: how much did the individuals with a disability contributed
  
+ 
+ #### Changed code to avoid exclusion of disabled individuals
+ 
+ 
  retire <- retire %>% 
    ## Extract the 40 cases with more than 60 years of contribution (15-75,20-80 cases are highly rare already)
-   filter(contrib.years_Retirement<=60) %>% 
+   filter(contrib.years_Retirement<=60 | DIS==1) %>% 
    ## also extract the 22061 cases with zero years of contribution will be excluded
-   filter(contrib.years_Retirement>=0.1) %>% 
+   filter(contrib.years_Retirement>=0.1 | DIS==1) %>% 
    ## create a factor variable
    mutate(contrib.years = as.numeric(contrib.years_Retirement)) %>% 
    mutate(contrib.years = factor(ifelse(contrib.years<20, "less than 20 years",
