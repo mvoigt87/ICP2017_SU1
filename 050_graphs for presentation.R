@@ -8,8 +8,6 @@ library(broom)
 library(forestplot)
 
 
-
-
 ## 1.1 Extract the data from the cox model which has been estimated parallel
 
 
@@ -32,9 +30,9 @@ cox.female.b <- coxph(Surv(time=entry.age.r,
                       data=subset(retire, SEXO=="female"))
 
 summary(cox.male.a)
-cox.zph( cox.male.a)
+
 summary(cox.female.b)
-cox.zph( cox.female.b)
+
 ##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #####
 
 
@@ -108,55 +106,33 @@ round(prop.table(table(retire$pensize[retire$SEXO=="female"])), digits = 3)
 
 ###############################################################################################
 
-#### MEN
 
-# Cochrane data from the 'rmeta'-package
-cochrane_male <-
-  structure(list(
-    mean  = c(NA, 1.11, 1.06, 1.15, 0.96, 0.97, 0.98, 1.20, 1.15, 1.22),
-    lower = c(NA, 1.07, 1.02, 1.11, 0.92, 0.95, 0.96, 1.17, 1.12, 1.20),
-    upper = c(NA, 1.16, 1.10, 1.20, 1.00, 0.99, 1.00, 1.23, 1.19, 1.24)),
-    .Names = c("HR", "lower", "upper"),
-    row.names = c(NA, -11L),
-    class = "data.frame")
-
-tabletext<-cbind(
-  c("Categories", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month",
-    "Tertiary Ed.","Secondary Ed.","Primary Ed.","Not married", "Widowed", "No Car"),
-  c("Rel. Frequ.", "29.0%", "34.0%","26.8%","7.2%", "26.9%", "27.7%","18.3%", "4.2%","24.9%"),
-  c("Hazard Ratio", "1.11", "1.06", "1.15", "0.96", "0.97", "0.98", "1.20", "1.15", "1.22"))
-
-
-forestplot(tabletext, txt_gp = fpTxtGp(label = list(gpar(fontfamily = "Arial"),
-                                                    gpar(fontfamily = "",
-                                                         col = "#000044")),
-                                       ticks = gpar(fontfamily = "", cex=1),
-                                       xlab  = gpar(fontfamily = "Arial", cex = 1.5)),
-           cochrane_male,new_page = TRUE, is.summary=c(TRUE,rep(FALSE,24)), boxsize = .20,
-           hrzl_lines = list("1"=gpar(lwd=1, columns=1:3,col="#000044"),"2"=gpar(lwd=1, columns=1:3,col="#000044")), xlog=TRUE,
-           col=fpColors(box="royalblue",line="darkblue")) 
+# tabletext<-cbind(
+#   c("Categories", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month",
+#     "Tertiary Ed.","Secondary Ed.","Primary Ed.","Not married", "Widowed", "No Car"),
+#   c("Rel. Frequ.", "29.0%", "34.0%","26.8%","7.2%", "26.9%", "27.7%","18.3%", "4.2%","24.9%"),
+#   c("Hazard Ratio", "1.11", "1.06", "1.15", "0.96", "0.97", "0.98", "1.20", "1.15", "1.22"))
+# 
+# 
+# forestplot(tabletext, txt_gp = fpTxtGp(label = list(gpar(fontfamily = "Arial"),
+#                                                     gpar(fontfamily = "",
+#                                                          col = "#000044")),
+#                                        ticks = gpar(fontfamily = "", cex=1),
+#                                        xlab  = gpar(fontfamily = "Arial", cex = 1.5)),
+#            cochrane_male,new_page = TRUE, is.summary=c(TRUE,rep(FALSE,24)), boxsize = .20,
+#            hrzl_lines = list("1"=gpar(lwd=1, columns=1:3,col="#000044"),"2"=gpar(lwd=1, columns=1:3,col="#000044")), xlog=TRUE,
+#            col=fpColors(box="royalblue",line="darkblue")) 
 
 
 
 
 
-#### WOMEN
 
-# Cochrane data from the 'rmeta'-package
-cochrane_female <-
-  structure(list(
-    mean  = c(NA, 1.05, 0.95, 1.08, 0.87, 0.93, 0.94, 1.17, 1.17, 1.07),
-    lower = c(NA, 0.93, 0.85, 0.96, 0.81, 0.89, 0.91, 1.12, 1.12, 1.04),
-    upper = c(NA, 1.18, 1.07, 1.21, 0.96, 0.98, 0.97, 1.21, 1.22, 1.10)),
-    .Names = c("HR", "lower", "upper"),
-    row.names = c(NA, -11L),
-    class = "data.frame")
-
-tabletext<-cbind(
-  c("Categories", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month",
-    "Tertiary Ed.","Secondary Ed.","Primary Ed.","Not married", "Widowed", "No Car"),
-  c("Rel. Frequ.", "16.1%", "21.7%","57.9%","5.7%", "20.8%", "26.3%","34.2%", "16.7%","38.1%"),
-  c("Hazard Ratio", "1.05", "0.95", "1.08", "0.87", "0.93", "0.94", "1.17", "1.17", "1.07"))
+# tabletext<-cbind(
+#   c("Categories", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month",
+#     "Tertiary Ed.","Secondary Ed.","Primary Ed.","Not married", "Widowed", "No Car"),
+#   c("Rel. Frequ.", "16.1%", "21.7%","57.9%","5.7%", "20.8%", "26.3%","34.2%", "16.7%","38.1%"),
+#   c("Hazard Ratio", "1.05", "0.95", "1.08", "0.87", "0.93", "0.94", "1.17", "1.17", "1.07"))
 
 
 # forestplot(tabletext, txt_gp = fpTxtGp(label = list(gpar(fontfamily = "Arial"),
@@ -173,35 +149,43 @@ tabletext<-cbind(
 #### &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& ####
 
 
-
-# 
-# forestplot(tabletext, txt_gp = fpTxtGp(label = list(gpar(fontfamily = "Arial"),
-#                                                     gpar(fontfamily = "",
-#                                                          col = "#000044")),
-#                                        ticks = gpar(fontfamily = "", cex=1),
-#                                        xlab  = gpar(fontfamily = "Arial", cex = 1.5)),
-#            cochrane_male,new_page = TRUE, is.summary=c(TRUE,rep(FALSE,24)), boxsize = .20,
-#            hrzl_lines = list("1"=gpar(lwd=1, columns=1:3,col="#000044"),"2"=gpar(lwd=1, columns=1:3,col="#000044")), xlog=TRUE,
-#            col=fpColors(box="royalblue",line="darkblue")
-#            ) 
-# 
-# 
-# 
-# cochrane_male <- cochrane_male %>% mutate(sex="male")
-# cochrane_female <- cochrane_female %>% mutate(sex="female")
-# 
-# cochrane <- bind_rows(cochrane_male,cochrane_female)
-
-
-
 ##### NEW CODIGO
 
 
+#### MEN
+
+# Cochrane data from the 'rmeta'-package
+cochrane_male <-
+  structure(list(
+    mean  = c(NA, 1.11, 1.03, 1.11, NA, 0.97, 0.97, 0.98, NA, 1.19, 1.17, NA, 1.22, NA),
+    lower = c(NA, 1.07, 1.01, 1.07, NA, 0.94, 0.96, 0.97, NA, 1.17, 1.14, NA, 1.20, NA),
+    upper = c(NA, 1.14, 1.07, 1.15, NA, 1.06, 0.99, 0.99, NA, 1.21, 1.19, NA, 1.23, NA)),
+    .Names = c("HR", "lower", "upper"),
+    row.names = c(NA, -11L),
+    class = "data.frame")
+
+
+#### WOMEN
+
+# Cochrane data from the 'rmeta'-package
+cochrane_female <-
+  structure(list(
+    mean  = c(NA, 0.99, 0.92, 1.04, NA, 0.89, 0.91, 0.93, NA, 1.18, 1.16, NA, 1.07, NA),
+    lower = c(NA, 0.90, 0.84, 0.95, NA, 0.83, 0.88, 0.90, NA, 1.15, 1.13, NA, 1.04, NA),
+    upper = c(NA, 1.09, 1.01, 1.14, NA, 0.95, 0.94, 0.95, NA, 1.22, 1.20, NA, 1.09, NA)),
+    .Names = c("HR", "lower", "upper"),
+    row.names = c(NA, -11L),
+    class = "data.frame")
+
+
+
 tabletext_mf<-cbind(
-  c(" ", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month",
-    "Tertiary Ed.","Secondary Ed.","Primary Ed.","Not married", "Widowed", "No Car"),
-  c("female", "16.1%", "21.7%","57.9%","5.7%", "20.8%", "26.3%","34.2%", "16.7%","38.1%"),
-  c("male", "29.0%", "34.0%","26.8%","7.2%", "26.9%", "27.7%","18.3%", "4.2%","24.9%"))
+  c(" ", "1000-1999  Eur/month","650-999 Eur/month","< 650 Eur/month","Ref. > 2000 Eur/month",
+    "Tertiary Ed.","Secondary Ed.","Primary Ed.","Ref. Incomplete Ed.", "Not married", "Widowed", "Ref. Married", "No Car", "Ref. 1 or more"),
+  c("female", "15.7%", "24.9%","55.8%"," ","4.8%", "18.6%", "26.2%"," ","34.3%", "18.8%"," ","41.2%"," "),
+  c("male", "27.4%", "34.1%","29.4%"," ","6.3%", "25.0%", "27.7%"," ","18.7%", "4.5%"," ","27.3%"," "))
+  
+  ### Table too big with these
   #c("HR -  female", "1.05", "0.95", "1.08", "0.87", "0.93", "0.94", "1.17", "1.17", "1.07"),
   #c("HR - male", "1.11", "1.06", "1.15", "0.96", "0.97", "0.98", "1.20", "1.15", "1.22"))
 
@@ -216,7 +200,7 @@ forestplot(tabletext_mf,
            mean = cbind(cochrane_male[, "HR"], cochrane_female[, "HR"]),
            lower = cbind(cochrane_male[, "lower"], cochrane_female[, "lower"]),
            upper = cbind(cochrane_male[, "upper"], cochrane_female[, "upper"]),
-           clip =c(-.125, 2), zero = 1,
+           clip =c(-.125, 2), zero = 1, 
            col=fpColors(box=c("navyblue", "orange")),
            xlab="Hazard Ratios")
 
@@ -242,21 +226,19 @@ COX.MALE <- COX.MALE %>% mutate(exp.estimate = exp(estimate)) %>%
   mutate(exp.conf.low = exp(conf.low)) %>% 
   mutate(exp.conf.high = exp(conf.high)) %>% 
   ## add the category names
-  mutate(categories = c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "$<$ 20 years contr.",
-                        "$>$ 40 years contr.", "Received Disability Pension", "Tertiary Educ.",
+  mutate(categories = c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "Received Disability Pension", "Tertiary Educ.",
                         "Secondary Educ.", "Primary Educ.", "Birth Cohort", "Lost Partner", "$>$10 years older",
-                        "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "parnter contr. $<$ 20 years",
-                        "partner contr. $>$ 40 years", "Disability partner", "Tertiary Educ. Partner",
+                        "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "Disability partner", "Tertiary Educ. Partner",
                         "Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
                         "Rent House/Aptm.", "Lives only with Partner", "Breadwinner"))
 
-COX.MALE <- COX.MALE[c(1:2,6:8,21,25,17),]
+COX.MALE <- COX.MALE[c(1:2,4:6,21,17,13),]
 
 C_male <-
   structure(list(
-    mean  = c(NA, 1.39, 6.01, 0.79, 0.85, 0.93, 1.27, 2.22, 1.89),
-    lower = c(NA, 1.27, 5.46, 0.69, 0.78, 0.86, 1.21, 2.12, 0.94),
-    upper = c(NA, 1.51, 6.62, 0.91, 0.93, 1.00, 1.33, 2.32, 3.78)),
+    mean  = c(NA, 1.37, 4.78, NA, 0.81, 0.85, 0.93, NA, 2.11, NA, 1.28, NA, 1.52, NA),
+    lower = c(NA, 1.29, 4.46, NA, 0.73, 0.78, 0.88, NA, 2.08, NA, 1.25, NA, 1.49, NA),
+    upper = c(NA, 1.46, 5.11, NA, 0.90, 0.93, 0.98, NA, 2.14, NA, 1.31, NA, 1.55, NA)),
     .Names = c("HR", "lower", "upper"),
     row.names = c(NA, -11L),
     class = "data.frame")
@@ -271,22 +253,20 @@ COX.FEMALE <- COX.FEMALE %>% mutate(exp.estimate = exp(estimate)) %>%
   mutate(exp.conf.low = exp(conf.low)) %>% 
   mutate(exp.conf.high = exp(conf.high)) %>% 
   ## add the category names
-  mutate(categories = c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "$<$ 20 years contr.",
-                        "$>$ 40 years contr.", "Received Disability Pension", "Tertiary Educ.",
+  mutate(categories = c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "Received Disability Pension", "Tertiary Educ.",
                         "Secondary Educ.", "Primary Educ.", "Birth Cohort", "Lost Partner", "$>$10 years older",
-                        "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "parnter contr. $<$ 20 years",
-                        "partner contr. $>$ 40 years", "Disability partner", "Tertiary Educ. Partner",
+                        "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "Disability partner", "Tertiary Educ. Partner",
                         "Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
-                         "Rent House/Aptm.", "Lives only with Partner", "Breadwinner"))
+                        "Rent House/Aptm.", "Lives only with Partner", "Breadwinner"))
 
-COX.FEMALE <- COX.FEMALE[c(1:2,6:8,21,25,17),]
+COX.FEMALE <- COX.FEMALE[c(1:2,4:6,21,17,13),]
 
 
 C_female <-
   structure(list(
-    mean  = c(NA, 1.03, 1.70, 1.01, 1.09, 1.01, 1.16, 1.61, 0.75),
-    lower = c(NA, 0.89, 1.40, 0.76, 0.92, 0.89, 1.07, 1.38, 0.36),
-    upper = c(NA, 1.20, 2.07, 1.33, 1.29, 1.15, 1.25, 1.87, 1.58)),
+    mean  = c(NA, 1.09, 1.67, NA, 1.00, 1.06, 1.06, NA, 1.98, NA, 1.10, NA, 1.73, NA),
+    lower = c(NA, 0.99, 1.55, NA, 0.80, 0.95, 0.98, NA, 1.89, NA, 1.05, NA, 1.69, NA),
+    upper = c(NA, 1.19, 1.80, NA, 1.21, 1.17, 1.14, NA, 2.06, NA, 1.15, NA, 1.78, NA)),
     .Names = c("HR", "lower", "upper"),
     row.names = c(NA, -11L),
     class = "data.frame")
@@ -298,16 +278,21 @@ C_female <-
 ###### PLOT
 
 tabletext_mf2<-cbind(
-  c(" ", "1000-1999  Eur/month","< 1000 Eur/month","Tertiary Ed.",
-   "Secondary Ed.","Primary Ed.","Breadwinner", "No Car", "Disability"),
-  c("female", "72.0%", "11.8%","4.3%","19.1%", "27.9%", "6.1%","21.6%", "16.7%"),
-  c("male", "76.4%", "6.8%","6.2%","20.5%", "26.6%", "31.0%","21.6%", "0.4%"))
+  c(" ", "1000-1999  Eur/month","< 1000 Eur/month","Ref. > 2000 Eur/month","Tertiary Ed.",
+   "Secondary Ed.","Primary Ed.","Ref. Incomplete Ed.","Breadwinner","Ref. Equal or less", "No Car", "Ref. 1 or more",
+   "Disability", "Ref. No Disability"),
+  c("female", "72.3%", "13.3%"," ","3.2%","16.3%", "27.8%"," ", "6.1%"," ","25.0%"," ", "24.5%"," "),
+  c("male", "78.1%", "14.0%", " ","4.5%","18.2%", "26.9%"," ","29.3%"," ","25.0%"," ","26.3%", " "))
+
+
+
+
 #c("HR -  female", "1.05", "0.95", "1.08", "0.87", "0.93", "0.94", "1.17", "1.17", "1.07"),
 #c("HR - male", "1.11", "1.06", "1.15", "0.96", "0.97", "0.98", "1.20", "1.15", "1.22"))
 
 
 forestplot(tabletext_mf2, 
-           legend_args = fpLegend(pos = list(x=.85, y=0.85), 
+           legend_args = fpLegend(pos = list(x=.85, y=0.95), 
                                   gp=gpar(col="#CCCCCC", fill="#F9F9F9")),
            legend = c("Male", "Female"), new_page = TRUE,
            fn.ci_norm = c(fpDrawNormalCI, fpDrawCircleCI),

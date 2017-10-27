@@ -43,8 +43,8 @@
 
  # -----------------------------
  #            female  male
- #   censored  0.90% 0.84%
- #   dead      0.10% 0.16%
+ #   censored  0.87% 0.81%
+ #   dead      0.13% 0.19%
  # -----------------------------
  
  summary(retire$exit.age[retire$event==1])
@@ -53,17 +53,17 @@
    # -----------------------------
    #### age at death
    #      Min. 1st Qu.  Median    Mean  3rd Qu.    Max.
-   #     61.06   77.03   82.55   81.96    87.56   99.90       # new values for the "dead" population make more sense
+   #     61.06   76.55   82.27   81.70    87.34   99.90       # new values for the "dead" population make more sense
                                                               # They are much higher on average.
    #### age at census
-   #     61.01   68.48   73.24   74.62    79.99   99.99 
+   #     61.01   69.56   74.21   75.32    80.66   99.99 
    # -----------------------------
  
  summary(aov(retire$exit.age ~ retire$event))
    # -----------------------------
    #                 Df   Sum Sq  Mean Sq  F value  Pr(>F)    
-   # retire$exit      1  4247716  4247716    76385  <2e-16 ***
-   # Residuals   637343 35442122       56                
+   # retire$exit       1  4798746 4798746   87426 <2e-16 ***
+   # Residuals    831229 45625353      55                
    # -----------------------------
 
    # histogram of age at exit distribution
@@ -85,8 +85,8 @@ round(prop.table(table(retire$event, retire$ESREAL5),2),digits = 2)
 chisq.test(table(retire$event, retire$ESREAL5))
   # ----------------------------- 
   #                  No or Incomplete Educ.  Tertiary Educ.  Secondary Educ.  Primary Educ.         # column percentage
-  #   censored                        0.81%           0.90%            0.91%          0.87%
-  #   dead                            0.19%           0.10%            0.09%          0.13%
+  #   censored                        0.78%           0.89%            0.89%          0.84%
+  #   dead                            0.22%           0.11%            0.11%          0.16%
   # 	Pearson's Chi-squared test
   #    data:  table(retire$exit, retire$ESREAL)
   #    X-squared = 9096.4, df = 3, p-value < 2.2e-16                                          ### has changed (less)
@@ -108,9 +108,9 @@ chisq.test(table(retire$event, retire$ESREAL5))
   
   # ----------------------------- 
   #             less than 650 Euro  650-999 Euro   1000-1999 Euro     more than 2000          # column percentage
-  #   censored         0.83%            0.86%           0.87%               0.93%
-  #   dead             0.17%            0.14%           0.13%               0.07%
-  #   X-squared = 59042, df = 21105, p-value < 2.2e-16
+  #   censored         0.80%            0.83%           0.85%               0.91%
+  #   dead             0.20%            0.17%           0.15%               0.09%
+  #   X-squared = 71789, df = 21501, p-value < 2.2e-16
   # ----------------------------- 
   
  
@@ -121,8 +121,8 @@ chisq.test(table(retire$event, retire$ESREAL5))
   chisq.test(table(retire$event, retire$HousReg))
   # ----------------------------- 
   #        Other form    Own   Rent
-  # Censor       0.85%  0.86%  0.83%
-  # Dead         0.15%  0.14%  0.17%
+  # Censor       0.82%  0.83%  0.80%
+  # Dead         0.18%  0.17%  0.20%
   # -----------------------------   
 
 
@@ -148,8 +148,8 @@ chisq.test(table(retire$event, retire$ESREAL5))
   dt[,list(mean=mean(entry.age.r),median=median(entry.age.r),iqr=IQR(entry.age.r)),by=SEXO]
   # ----------------------------- 
   #       sex     mean median  iqr
-  # 1:   male 71.63307  70.16 12.11
-  # 2: female 71.82212  69.57 11.80
+  # 1:   male 72.11584  70.81 12.15
+  # 2: female 72.79736  70.91 12.84
   # ----------------------------- 
   
   
@@ -207,7 +207,7 @@ KM1 <- survfit(coxph(Surv(time=entry.age.r,
                           event=event)~1,data=retire),type="kaplan-meier")
   # -----------------------------    
   #  records    n.max  n.start   events   median  0.95LCL  0.95UCL 
-  # 637345.0 152744.0   7903.0  92323.0     85.4     85.3     85.4
+  # 831231.0 192113.0   7903.0 142220.0     84.4     84.4     84.5
   # -----------------------------  
   
 KM1
@@ -432,6 +432,12 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ## ref: more than 2000 Euro
   ## Likelihood ratio test= 75.19  on 3 df,   p=3.331e-16
   
+    #### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #####
+    ### NEW RESULTS!!!
+    #                               coef exp(coef) se(coef)     z Pr(>|z|)
+    # pensize1000-1999 Euro     0.08400   1.08763  0.01491 5.635 1.75e-08 ***
+    # pensize650-999 Euro       0.02886   1.02928  0.01457 1.981 0.047575 *
+    # pensizeless than 650 Euro 0.05589   1.05748  0.01437 3.888 0.000101 ***
 
 ### ------------------------------------------------------------------------------------------------- ###  
 ### ------------------------------------------------------------------------------------------------- ###  
@@ -503,8 +509,8 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ### Compare the stratified model to the interaction model - (ANOvA)
   anova(ret.interaction.sex, cox.strat.1)
   ###           loglik   Chisq Df P(>|Chi|)    
-  ### Model1  -951406                        
-  ### Model2  -951461 110.06 13 < 2.2e-16 ***
+  ### Model1  -1509885                          
+  ### Model2  -1511976 4183.1 15 < 2.2e-16 ***
   ### This model is not statistically significantly different from the no interaction model at the 0.05 level, 
   ### thus, we conclude that the model without interaction is adequate.
   

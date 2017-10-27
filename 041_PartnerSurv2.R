@@ -14,7 +14,7 @@
 ### 0.1. Loading data set
 load("031_RETIND.RData")
 # ----------------------------- 
-# 637345 individuals
+# 831231 individuals
 # -----------------------------
 
 ### 0.2 load necessary package
@@ -48,7 +48,7 @@ part.R <- retire %>% filter(!is.na(kIDcon)) %>%
   # Extract the few who are not living together in 2011 because of different reasons
   filter(!is.na(cohab2011))
   
-## 454294 individuals
+## 576972 individuals
 
 ## 1.1.1 Check for individuals who are also receiving a pension
 
@@ -144,12 +144,12 @@ pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Eur
 
 
 ## 1.4.5 Breadwinner variable - who earns at least Euro more than the partner
-
-  pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
-                                                 ifelse(INCOME<INCOME_p-50,"lower income","equal"))))
-
-round(prop.table(table(pen.coupl$main.earner)),digits = 2)
-round(prop.table(table(pen.coupl$main.earner,pen.coupl$SEXO),2),digits = 2)
+# 
+#   pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
+#                                                  ifelse(INCOME<INCOME_p-50,"lower income","equal"))))
+# 
+# round(prop.table(table(pen.coupl$main.earner)),digits = 2)
+# round(prop.table(table(pen.coupl$main.earner,pen.coupl$SEXO),2),digits = 2)
 
 ## For the model -  breadwinner variable
  
@@ -175,7 +175,7 @@ pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>%
 pen.coupl <- within(pen.coupl, age.diff.c <- relevel(age.diff.c, ref = "same age")) 
 
 # -----------
- summary(pen.coupl$age.diff)     # minimum value -28.64
+ summary(pen.coupl$age.diff)     # minimum value -30.78
  
  pen.coupl %>% ggplot(aes(x=age.diff, fill=SEXO)) +
    geom_histogram(bins=50)+
@@ -209,8 +209,8 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  round(prop.table(table(pen.coupl$event,pen.coupl$event_p),2),digits = 3) # Column Percentage
  # -----------------------------  
  #         censor_p   dead_p
- #  censor  0.916      0.833
- #  dead    0.084      0.167
+ #  censor  0.889      0.802
+ #  dead    0.111      0.198
  # -----------------------------  
  
  
@@ -231,8 +231,8 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  round(prop.table(table(pen.coupl$exit,pen.coupl$SEXO),2),digits = 2)    ## column percentage
  # -----------------------------  
  #           female   male
- # censored   0.95%  0.86%
- # dead       0.05%  0.14%
+ # censored   0.93%  0.83%
+ # dead       0.07%  0.17%
  # -----------------------------
  
  
@@ -262,7 +262,7 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  # -----------------------------  
  #   records    n.max  n.start   events   median  0.95LCL  0.95UCL 
- #  134421.0  39592.0    897.0  12344.0     86.8     86.7     87.0 
+ #  227374.0  65320.0    941.0  27712.0     85.8     85.7     85.9
  #  median and confidence interval values are higher than for the total population
  # ----------------------------- 
  
@@ -286,15 +286,15 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
                              time2 = exit.age,
                              event = event)~1, data = subset(pen.coupl,SEXO=="female")), type = "kaplan-meier")
  
- km.male <- tidy(KM.S1) %>% select(time,estimate) %>% mutate(sex="male")
- km.female <- tidy(KM.S2) %>% select(time,estimate) %>% mutate(sex="female")
+ km.male <- tidy(KM.S1) %>% dplyr::select(time,estimate) %>% mutate(sex="male")
+ km.female <- tidy(KM.S2) %>% dplyr::select(time,estimate) %>% mutate(sex="female")
  
  km.sex <- union(km.male,km.female)
  km.sex %>% ggplot(aes(x=time, y=estimate, color=sex)) +
    geom_step() +
    scale_y_continuous(name = "Survival Probability")                  +
    scale_x_continuous(name = "Age")                                   +
-   xlim(60, 95)                                                       +
+   xlim(60, 99)                                                       +
    scale_color_manual(values = c("orange", "darkgrey"), name="")      +
    theme_minimal()
  
@@ -303,6 +303,10 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # (age at 2011) were mostly living without partner at the time of their entry - so we do not follow up so many of them)
  # ----------------------------- 
  
+ 
+ ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
+ ###### !!! New! Contribution years are excluded
+ ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###### 
  
  #### 4.2 Cox PH Regression Models
  
@@ -313,8 +317,8 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  COX.STR <- coxph(Surv(time = entry.age.r,
                        time2 = exit.age,
-                       event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                       contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh +
+                       event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                       DIS_p + ESREAL5_p +  mobil + HousReg + hh +
                        strata(SEXO)
                        ,data = pen.coupl)
  summary(COX.STR)
@@ -333,16 +337,16 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
                         FUN = function(DF) {
                           coxph(Surv(time=entry.age.r,
                                      time2=exit.age,
-                                     event=event) ~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                  contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh, pen.coupl)
+                                     event=event) ~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                     DIS_p + ESREAL5_p +  mobil + HousReg + hh, pen.coupl)
                         })
  part.separate
  
  ## 3.2.4 Model including interaction effects
  part.interaction.sex <- coxph(formula = Surv(time=entry.age.r,
                                              time2=exit.age,
-                                             event=event) ~ (HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + 
-                                                               age.diff.c + contrib.years_p + DIS_p + ESREAL5_p +  
+                                             event=event) ~ (HHINC + DIS + ESREAL5 + FNAC +  p.surv + 
+                                                               age.diff.c + DIS_p + ESREAL5_p +  
                                                                mobil + HousReg + hh)*SEXO - SEXO + strata(SEXO),
                               data    = pen.coupl,
                               ties    = c("efron","breslow","exact")[1])
@@ -352,9 +356,9 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ### Compare the stratified model to the interaction model - (ANOvA)
  anova(part.interaction.sex,  COX.STR)
  
- #   loglik   Chisq  Df  P(>|Chi|)    
- # 1 -107241                        
- # 2 -107367  252.38 24  < 2.2e-16 ***
+ #    loglik   Chisq  Df  P(>|Chi|)    
+ # 1 -258193                        
+ # 2 -258385 385.28   20  < 2.2e-16 ***
  ### The stratified model is not statistically significantly different from the no interaction model at the 0.05 level, 
  ### thus, we conclude that the model without interaction is adequate.
  # -----------------------------
@@ -364,15 +368,15 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # Male population
  COX.MALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                        contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
                         ,data = subset(pen.coupl,SEXO=="male"))
  
  # Female population
  COX.FEMALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + contrib.years + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                     contrib.years_p + DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
                    ,data = subset(pen.coupl,SEXO=="female"))
  
  
@@ -426,12 +430,10 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  stargazer(COX.MALE,COX.FEMALE, title="Cox PH Model -  Household Analysis",no.space=F, 
            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-           covariate.labels=c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "$<$ 20 years contr.",
-                              "$>$ 40 years contr.", "Received Disability Pension", "Tertiary Educ.",
-                              "Secondary Educ.", "Primary Educ.", "Birth Cohort", "Lost Partner", "$>$10 years older",
-                              "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "parnter contr. $<$ 20 years",
-                              "partner contr. $>$ 40 years", "Disability partner", "Tertiary Educ. Partner",
-                              "Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
+           covariate.labels=c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "Received Disability Pension", 
+                              "Tertiary Educ.","Secondary Educ.", "Primary Educ.", "Birth Cohort", "Lost Partner", "$>$10 years older",
+                              "$>$ 10 years younger", "1-10 years older", "1-10 years younger", "Disability partner", 
+                              "Tertiary Educ. Partner","Secondary Educ. Partner", "Primary Educ. Partner", "No Cars Available", "Own House/Aptm.",
                               "Rent House/Aptm.", "Lives only with Partner", "Breadwinner"),
            single.row=TRUE, apply.coef = exp)
  
