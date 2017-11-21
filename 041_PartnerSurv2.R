@@ -130,7 +130,7 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
   # -----------------------------
   # income variable 
    hist(pen.coupl$hhincome, breaks = 30)
-  # -----------------------------  
+  
  
 
 ## 1.4.4 Distribution invites to look at 3 groups (less than 1000 Euro, 1000-1999, more then 2000)
@@ -141,6 +141,19 @@ pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than
  
 pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
  
+
+
+# -----------------------------
+# average income in numbers for the descriptive tables
+
+DINTBL <- aggregate(pen.coupl$INC.TOT,by=list(pen.coupl$SEXO),FUN=mean)
+
+#            
+#            x
+#  1  female 731.5029 Euro
+#  2    male 859.8413 Euro
+
+# -----------------------------
 
 
 ## 1.4.5 Breadwinner variable - who earns at least Euro more than the partner
@@ -313,6 +326,22 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # !! Shortened code - Trial code for covariate analysis in older file
  # It can be assumed that the used covariates are tested and passed the test - others (like the room number were removed)
  
+ 
+ ## 4.2.0.5 Models with only household income
+ 
+ cox.inc.m <- coxph(Surv(time = entry.age.r,
+                         time2 = exit.age,
+                         event = event)~ HHINC, data = subset(pen.coupl,SEXO=="male"))
+ 
+ cox.inc.f <- coxph(Surv(time = entry.age.r,
+                         time2 = exit.age,
+                         event = event)~ HHINC, data = subset(pen.coupl,SEXO=="female"))
+ 
+ summary(cox.inc.m)
+ summary(cox.inc.f)
+ 
+ 
+ 
  ## 4.2.1 Stratified Model
  
  COX.STR <- coxph(Surv(time = entry.age.r,
@@ -426,8 +455,16 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  
  
- ##### 4. Model Output
+ ##### 5. Model Output
  
+ ## 5.1. just hh income
+ stargazer(cox.inc.m,cox.inc.f, title="Cox PH Model -  Household Analysis",no.space=F, 
+           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+           covariate.labels=c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month"),
+           single.row=TRUE, apply.coef = exp)
+ 
+ 
+ ## 5.2. Full Model
  stargazer(COX.MALE,COX.FEMALE, title="Cox PH Model -  Household Analysis",no.space=F, 
            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
            covariate.labels=c("HH inc. 1000-2000 Euro/month","HH inc. $<$ 1000 Euro/month", "Received Disability Pension", 

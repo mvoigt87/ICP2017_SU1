@@ -114,6 +114,16 @@ chisq.test(table(retire$event, retire$ESREAL5))
   # ----------------------------- 
   
  
+   # average income in numbers for the descriptive tables
+  
+  DINTBL <- aggregate(retire$INC.TOT,by=list(retire$SEXO),FUN=mean)
+  
+  #            x
+  # 1  female  826.6817  Euro
+  # 2    male 1038.7649  Euro
+
+  
+  
 
   ## Event by tenency status
   
@@ -431,6 +441,37 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ##   pensizeless than 650 Euro 0.04563   1.04669  0.01703 2.679  0.00739 ** 
   ## ref: more than 2000 Euro
   ## Likelihood ratio test= 75.19  on 3 df,   p=3.331e-16
+  
+## 3.3.2 Standard Cox Regression with only pension size  - by sex  
+  cox.pen.1.m <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event)~pensize, data = subset(retire,SEXO=="male"))
+  
+  summary(cox.pen.1.m)
+
+  cox.pen.1.f <- coxph(Surv(time=entry.age.r,
+                            time2=exit.age,
+                            event=event)~pensize, data = subset(retire,SEXO=="female"))
+  
+  summary(cox.pen.1.f)
+  
+  
+  ### in Latex table
+  
+  stargazer(cox.pen.1.m,cox.pen.1.f,
+            title="Cox PH Model",no.space=F, 
+  ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+  covariate.labels=c("1000-1999  Eur/month","650-999 Eur/month","$<$ 650 Eur/month"), single.row=TRUE, apply.coef = exp)
+  
+  
+  
+  ## clean up
+  rm(cox.pen.1.m,cox.pen.1.f)
+  
+  
+  
+  
+  
   
     #### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #####
     ### NEW RESULTS!!!
