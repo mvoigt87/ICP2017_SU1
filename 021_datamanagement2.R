@@ -216,14 +216,31 @@ retire <- retire %>% mutate(INCOME = ifelse(income_Retirement>0,income_Retiremen
  hist(retire$INCOME)
  summary(retire$INC.TOT)
  hist(retire$INC.TOT)
-
-  ### Transform it into a categorical variable
+ 
+ 
+ 
+### Transform it into a categorical variable
 retire <- retire %>% mutate(pensize = factor(ifelse(retire$INC.TOT<650,"less than 650 Euro",
                                                      ifelse(retire$INC.TOT<1000, "650-999 Euro",
                                                             ifelse(retire$INC.TOT<2000, "1000-1999 Euro", "more than 2000 Euro")))))
  ## change reference for the pension size variable to the highest income category
- retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
- 
+retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
+
+
+
+##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
+
+### Alternative without including widowhood pension
+
+retire <- retire %>% mutate(pensize.sw = factor(ifelse(retire$INCOME<650,"less than 650 Euro",
+                                                    ifelse(retire$INCOME<1000, "650-999 Euro",
+                                                           ifelse(retire$INCOME<2000, "1000-1999 Euro", "more than 2000 Euro")))))
+## change reference for the pension size variable to the highest income category
+retire <- within(retire, pensize <- relevel(pensize.sw, ref = "more than 2000 Euro"))
+
+##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
+
+
 ### 2.3 Independent categorical variables
  
  # ------------------- #
