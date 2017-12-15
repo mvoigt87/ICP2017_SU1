@@ -56,11 +56,11 @@ summary(sscc$income_Disability[!is.na(sscc$years.start.follow_Disability)])
 summary(sscc$start.date_Disability)
 # Minimum year is 1870 => !Someone who is 95 years old in 2011 (oldest individual in the study) 
 # was born in 1916 - the start of the disability period at 1870 is impossible
-sscc %>% mutate(tt = ifelse(start.date_Disability<1916,TRUE,FALSE)) %>% count(tt)
+sscc %>% dplyr::mutate(tt = ifelse(start.date_Disability<1916,TRUE,FALSE)) %>% dplyr::count(tt)
 hist(sscc$start.date_Disability[sscc$start.date_Disability<1950])
 ## There are 66 individuals with impossible start dates regarding their age in 2011
 #  Excluded from the analysis
-sscc <- sscc %>% mutate(ff = ifelse(!is.na(start.date_Disability) & start.date_Disability<1916,1,0)) %>% 
+sscc <- sscc %>% dplyr::mutate(ff = ifelse(!is.na(start.date_Disability) & start.date_Disability<1916,1,0)) %>% 
   filter(ff==0) %>% select(-ff)
 
 ## ---------- ##
@@ -69,7 +69,7 @@ sscc <- sscc %>% mutate(ff = ifelse(!is.na(start.date_Disability) & start.date_D
 summary(sscc$start.date_Retirement)
 # Minimum age at retirement = 1965 
 # - oldest individuals reached age 65 in 1981
-sscc %>% mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% count(tt)
+sscc %>% dplyr::mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% dplyr::count(tt)
 # 2753 individuals of the oldest cohort in 2011 have retired "early"
 
 # count the disabled individuals who had worked and who did not
@@ -81,7 +81,7 @@ dcast(sscc[,.N,.(Retire=income_Retirement>0,Disability=income_Disability>0)], Re
 retire <- sscc %>% 
   ## Create an age at 2011 (start of the observation period) to extract the age groups 60-95
   ## This will be different from the age at entry to the study which can be later than 2011
-  mutate(age2011 = 2011-FNAC) %>%
+  dplyr::mutate(age2011 = 2011-FNAC) %>%
   ## When does the clock start?
   # 1. Individual is 65 years and older in 2011
   # 2. Individual who reach age 65 in the course of time until 2016
@@ -90,22 +90,22 @@ retire <- sscc %>%
   #    as part of their lifetime earnings
   ## Extract everybody who is or turns 65 within the follow up period  
   # Therefore the disability and retirement entry age will be combined
-  mutate(entry.age.r = years.start.follow_Retirement-FNAC) %>%
+  dplyr::mutate(entry.age.r = years.start.follow_Retirement-FNAC) %>%
   # disability
-  mutate(entry.age.d = years.start.follow_Disability-FNAC) %>% 
+  dplyr::mutate(entry.age.d = years.start.follow_Disability-FNAC) %>% 
   # widow
-  mutate(entry.age.w = years.start.follow_Widowhood-FNAC) %>% 
+  dplyr::mutate(entry.age.w = years.start.follow_Widowhood-FNAC) %>% 
   ## NOW select the cases you are interested in for the individual analysis (not the widows)
   ## Difficulty: Disability pension will automatically become a retirement pension with 65
-  mutate(entry.age.r = ifelse(is.na(entry.age.r) & entry.age.d>64, entry.age.d, entry.age.r)) %>% 
+  dplyr::mutate(entry.age.r = ifelse(is.na(entry.age.r) & entry.age.d>64, entry.age.d, entry.age.r)) %>% 
   ## Exclude the widows for now
   filter(!is.na(entry.age.r)) %>% 
   ## There often problems with the very old individuals (data errors in combination with small case numbers)
   filter(entry.age.r<=95) %>% 
-  ## the same applies to the cases who are 60 or younger (oriented at the legal early retirement age 61)
-  filter(entry.age.r>=61) %>% 
+  ## the same applies to the cases who are 65 or younger (oriented at the legal retirement age 65)
+  filter(entry.age.r>=65) %>% 
   ## Furthermore everybody who receives a disability pension will be marked
-  mutate(DIS = ifelse(!is.na(start.date_Disability),1,0))
+  dplyr::mutate(DIS = ifelse(!is.na(start.date_Disability),1,0))
 
 
            ### leaves us with 854385 individuals
@@ -166,14 +166,14 @@ hist(retire$entry.age.r,breaks=34)
         
 ##### 2.1 Create an event variable where outmigration translate to a right censoring
         
-retire <- retire %>% mutate(event = as.numeric(ifelse(cause=="death",1,0))) %>% 
+retire <- retire %>% dplyr::mutate(event = as.numeric(ifelse(cause=="death",1,0))) %>% 
           ##### 2.2 Individual Exit Age  - age at death or censorship
-          mutate(exit.age = data.out - FNAC)
+          dplyr::mutate(exit.age = data.out - FNAC)
         
           summary(retire$exit.age)
           
           #    Min.  1st Qu.  Median    Mean 3rd Qu.    Max. 
-          #   61.01    70.22   75.73   76.54   82.38   99.99
+          #   65.01   71.90   77.21   77.86   83.14   99.99
         
 ##### 2.3 Sex and Pensionsize
         
@@ -184,8 +184,8 @@ retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
    ### Retirement income
       summary(retire$income_Retirement)
       summary(retire$income_Disability)
-      retire %>% mutate(tt = ifelse(income_Disability>0 & income_Retirement!=0,T,F)) %>% count(tt)
-        # 2210 receive disability and retirement income
+      retire %>% dplyr::mutate(tt = ifelse(income_Disability>0 & income_Retirement!=0,T,F)) %>% dplyr::count(tt)
+      # 1796 receive disability and retirement income
         
         # --- test
         kk <- subset(retire,income_Disability>0 & income_Retirement!=0)
@@ -195,50 +195,62 @@ retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
         
         hist(kk$income_Retirement)
         hist(kk$income_Disabilit)
-        kk %>% mutate(mm = ifelse(start.date_Disability<start.date_Retirement,T,F)) %>% count(mm)  
+        kk %>% dplyr::mutate(mm = ifelse(start.date_Disability<start.date_Retirement,T,F)) %>% dplyr::count(mm)  
         # majority of these cases has an entry to retirement after they have received a disability pension
         #
         # cases will be treated as follows: they will be marked with a disability marker and their income will be
         # set to their retirement pension
 
-### Income Variable    
-retire <- retire %>% mutate(INCOME = ifelse(income_Retirement>0,income_Retirement,
+### Income Variable  - including widowhood pension  
+retire <- retire %>% dplyr::mutate(INCOME = ifelse(income_Retirement>0,income_Retirement,
                                             ifelse(income_Disability>0,income_Disability,0))) %>% 
           ## Now to include widowhood pension as additional income source
-          mutate(INC.TOT = INCOME+income_Widowhood) %>%
+          dplyr::mutate(INC.CW = INCOME+income_Widowhood) %>%
           ## But exclude everybody who just has received a widowhood pension
           ## These people will enter in the second part of the analysis - theoretically don´t have an income
           ## which is related to their life time employment activity
-          filter(income_Disability!=0 | income_Retirement!=0)
+          dplyr::filter(income_Disability!=0 | income_Retirement!=0)
  
 
  summary(retire$INCOME)
  hist(retire$INCOME)
- summary(retire$INC.TOT)
- hist(retire$INC.TOT)
+ summary(retire$INC.CW)
+ hist(retire$INC.CW)
+ 
+### Principal pension variable
+ 
+ retire <- retire %>% mutate(pensize = factor(ifelse(retire$INCOME<650,"less than 650 Euro",
+                                                        ifelse(retire$INCOME<1000, "650-999 Euro",
+                                                               ifelse(retire$INCOME<2000, "1000-1999 Euro", "more than 2000 Euro")))))
+ ## change reference for the pension size variable to the highest income category
+ retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
+ 
+ ##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
  
  
+ 
+ ### Alternative B  with 3 categories
+ 
+ retire <- retire %>% mutate(pensize.3 = factor(ifelse(retire$INCOME<1000, "less than 1000 Euro",
+                                                       ifelse(retire$INCOME<1500, "1000-1499 Euro", "more than 1500 Euro"))))
+ ## change reference for the pension size variable to the highest income category
+ retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1500 Euro"))
+ 
+ round(prop.table(table(retire$pensize.3,retire$SEXO),2),2) # column percentage
+ 
+ 
+##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
  
 ### Transform it into a categorical variable
-retire <- retire %>% mutate(pensize = factor(ifelse(retire$INC.TOT<650,"less than 650 Euro",
-                                                     ifelse(retire$INC.TOT<1000, "650-999 Euro",
-                                                            ifelse(retire$INC.TOT<2000, "1000-1999 Euro", "more than 2000 Euro")))))
+retire <- retire %>% mutate(pensize.CW = factor(ifelse(retire$INC.CW<650,"less than 650 Euro",
+                                                     ifelse(retire$INC.CW<1000, "650-999 Euro",
+                                                            ifelse(retire$INC.CW<2000, "1000-1999 Euro", "more than 2000 Euro")))))
  ## change reference for the pension size variable to the highest income category
-retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
+retire <- within(retire, pensize.CW <- relevel(pensize.CW, ref = "more than 2000 Euro"))
 
 
 
-##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
 
-### Alternative without including widowhood pension
-
-retire <- retire %>% mutate(pensize.sw = factor(ifelse(retire$INCOME<650,"less than 650 Euro",
-                                                    ifelse(retire$INCOME<1000, "650-999 Euro",
-                                                           ifelse(retire$INCOME<2000, "1000-1999 Euro", "more than 2000 Euro")))))
-## change reference for the pension size variable to the highest income category
-retire <- within(retire, pensize <- relevel(pensize.sw, ref = "more than 2000 Euro"))
-
-##### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
 
 
 ### 2.3 Independent categorical variables
@@ -302,8 +314,14 @@ round(prop.table(table(retire$civil.status)),digits=2)
 ## It is possible that we exclude some married individuals who are not cohabitating (LAT relationships)
 
 # -------------------------- #
-# Intime vs. Late Retirement #
+# House ownership            #
 # -------------------------- #
+
+# collapse the variables
+
+retire <- retire %>% dplyr::mutate(HousReg = ifelse(HousReg!="Own","Not owned", "owned"))
+round(prop.table(table(retire$HousReg)),digits = 2)
+
 
 # ----------------------- #
 # Car / Mobility variable #
@@ -315,6 +333,8 @@ round(prop.table(table(retire$mobil)),digits = 2)
 # ----------------------- #
 # Household size          #
 # ----------------------- #
+# collapsing categories according to tests
+
 retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
 retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
 
@@ -327,7 +347,7 @@ retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
 ### --------------------- ###
 
 ## visualizing education/pension income
-  retire %>%  ggplot(aes(x=INC.TOT, fill=ESREAL5)) +
+  retire %>%  ggplot(aes(x=INCOME, fill=ESREAL5)) +
   geom_histogram(bins = 20)+
   labs(color="")+
   theme_bw()  
@@ -349,6 +369,9 @@ retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
  
   # by pension size 
   round(prop.table(table(retire$event,retire$pensize),2),digits = 3) # column percentage
+  # income gradient visible
+  
+  round(prop.table(table(retire$event,retire$pensize.3),2),digits = 3) # column percentage
   # income gradient visible
   
 ##### 3.2 Save prepared data set

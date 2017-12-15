@@ -3,23 +3,25 @@ A repository for files related to the presentation at the IUSSP International Po
 We aim to analyze how social position (the socioeconomic gradient) affects your health after the transition to retirment.
 Abstract:
 
-Background: After decades of exceptional mortality improvements paired with low fertility South European
-societies have to face the challenges of heavy population aging. Especially the prospect of large baby boomer
-cohorts approaching retirement age raises concerns about the sustainability of social security and pension
-funds. For the adjustment and reformation of pension systems, it will be essential to address the socioeconomic
-health gradient and mechanism behind structural inequalities in the retired population. In particular
-with regard to aspects of social fairness, the quantification of existing inequalities in health and mortality
-within the retired population can contribute to the anticipation of prospective effects on the population health.
-Method: We analyze the impact of several socioeconomic and demographic indicators on mortality during
-the transition to retirement by using a relative underused time-to-event approach. Flexible parametric models
-apply cubic splines to fit a baseline failure rate in a survival process and have advantageous properties compared
-to the widely used Cox PH model. This analysis is conducted, using the ”Base de Datos Longitudinal de
-Poblaci´on de Andaluc´ia” (BDLPA), a register-based individual level data base which is linked to the Andalusian
-social security data set NIS for the years 2011 to 2015.
-Results: We identify a clear socio-economic health gradient for Spanish men. Their pension income, their education
-and especially the kind of last occupation determine their survival. The difference between a . . . and
-. . . in terms of life expectancy are about . . . years. Notably, the findings for women are ambiguous. Neither
-the education, the occupation before retirement nor the pension size can explain differences in health and survival.
+Background: Adjustments to the crisis stricken Spanish public pension system are generally directed at a prolongation
+of working life and the incorporation of average life expectancy in the pension base formula. By
+ignoring heterogeneity with regard to survival and wellbeing, these changes possibly enhance existing social
+inequalities in the retired population.
+Method: The impact of socioeconomic and demographic indicators on survival of retired individuals is estimated
+by applying stratified Cox Proportional Hazard regression models to a linked register based data set
+covering the Andalusian census population between 2011 and 2016.
+Results: Estimates suggest a higher relative mortality risk for men with lower pensions even after controlling
+for relevant sociodemographic impact factors. According to our findings, women’s survival is not significantly
+affected by income inequalities on an individual level. When household income is accounted for, the results
+indicate a vastly increased relative risk for females in low income households which is only exceed by their
+male counterparts.
+Conclusion: Findings confirm substantial socioeconomic mortality differences in retired population of Southern
+Spain, in particular for men. Future adaptations of pension systems essentially need to account for structural
+life course differences and its consequences for future population health and longevity.
+Contribution: This paper extents the literature on income and wealth related inequalities in longevity by analyzing
+survival time differences of the retired population of Andalusia dependent on pension income and
+other sociodemographic factors. It is furthermore attempted to highlight potential pitfalls of recent adaptations
+of public pension system in Spain with regard to social fairness.
 
 
 The file will contain various R Code files following a (hopefully) coherent description.
