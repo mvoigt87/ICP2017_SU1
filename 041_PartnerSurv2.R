@@ -48,7 +48,7 @@ part.R <- retire %>% filter(!is.na(kIDcon)) %>%
   # Extract the few who are not living together in 2011 because of different reasons
   filter(!is.na(cohab2011))
   
-## 576972 individuals
+## 497799 individuals
 
 ## 1.1.1 Check for individuals who are also receiving a pension
 
@@ -57,7 +57,7 @@ id.b <- as.vector(part.R$kIDcon)
 
 r.test <- as.data.frame(intersect(id.a,id.b))
  # ----------------------------- 
- # about 140000 individuals are residing togehter and receive a social security or disability pension
+ # about 210.000 individuals are residing togehter and receive a social security or disability pension
  # ----------------------------- 
 
 ## 1.1.2 extract couples with social security pension
@@ -72,8 +72,6 @@ pen.coupl <- left_join(r.test,part.R, by="kID")
 pen.coupl <- pen.coupl %>% filter(cohab2011==T) 
 
  # ----------------------------- 
- # 134421 individuals left
- # ----------------------------- 
 
 rm(r.test,part.R, id.a, id.b)
 
@@ -83,7 +81,7 @@ rm(r.test,part.R, id.a, id.b)
 
 cbind(colnames(pen.coupl))
 
-r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:43)) %>% 
+r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:48)) %>% 
   # delete/rename the kIDcon variable
   mutate(PID = kIDcon) %>%
   # rename the kID variable
@@ -93,7 +91,7 @@ r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:43)) %>%
 cbind(colnames(r.test.a))
   # add p to colnames to identify the partner variable
 colnames(r.test.a)[1:20] <- str_c( colnames(r.test.a)[1:20],"_p" )
-colnames(r.test.a)[22:32] <- str_c( colnames(r.test.a)[22:32],"_p" )
+colnames(r.test.a)[22:38] <- str_c( colnames(r.test.a)[22:38],"_p" )
 tbl_df(r.test.a)
 
 
@@ -113,45 +111,57 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
  # - simply when the partner dies before the individual under observation (time varying for later)
  pen.coupl <- pen.coupl %>% mutate(partner.death = ifelse(event_p==1 & data.out > data.out_p,1,0)) %>% 
    ## Make a factor out of it
-   mutate(p.surv = factor(ifelse(partner.death==1,"lost partner","partner alive"))) %>% 
+   mutate(p.surv = factor(ifelse(partner.death==1,"widowed","partner alive"))) %>% 
    # 1.4.2 Calculate Household income
    # theoretically a time varying variable depending on the widowhood status
    ## for now a simplified version
-   mutate(hhincome=ifelse(partner.death == 0,INCOME+INCOME_p,INC.TOT)) %>% 
+   mutate(hhincome=ifelse(partner.death == 0,INCOME+INCOME_p,INC.CW)) %>% 
    
    # 1.4.3 Edit variable number of household members
-   mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
+   mutate(hh= factor(ifelse(NMIEM==2, "2 person household","larger household")))
  
   # -----------------------------  
    table(pen.coupl$hh)
     #  larger household with partner only 
-    #             91152             43269 
-    #               68%               32%
+    #           126100              76829
+    #               62%               38%
+
+  
   # -----------------------------
   # income variable 
    hist(pen.coupl$hhincome, breaks = 30)
+   summary(pen.coupl$hhincome) 
+  # mean = 1395; median = 1193  => ! difference between first and third quarter = 280 Euro only
+  # from the histogram it probably makes sense to look at the ones with less than 1000, 1000-1500, and more than that
   
  
 
-## 1.4.4 Distribution invites to look at 3 groups (less than 1000 Euro, 1000-1999, more then 2000)
+## 1.4.4 Distribution invites to look at 3 groups (less than 1000, 1000-1500, and more than that)
  
  
-pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than 1000 Euro",
-                                                         ifelse(hhincome<=2000,"1000-2000 Euro","more than 2000 Euro"))))
+pen.coupl <- pen.coupl %>% mutate(HHINC.3 = factor(ifelse(hhincome<1000,"less than 1000 Euro",
+                                                         ifelse(hhincome<=1500,"1000-1500 Euro","more than 1500 Euro"))))
  
-pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
+
+
  
+## 1.4.5 Distribution invites to look at 4 groups (less than 1000 Euro, 1000-1499 Euro, 1500-1999 Euro, more then 2000)
+
+
+pen.coupl <- pen.coupl %>% mutate(HHINC.4 = factor(ifelse(hhincome<1000,"less than 1000 Euro",
+                                                        ifelse(hhincome<=1500,"1000-1500 Euro",
+                                                               ifelse(hhincome<=2000,"1500-2000 Euro","more than 2000 Euro")))))
 
 
 # -----------------------------
 # average income in numbers for the descriptive tables
 
-DINTBL <- aggregate(pen.coupl$INC.TOT,by=list(pen.coupl$SEXO),FUN=mean)
+DINTBL <- aggregate(pen.coupl$INC.CW,by=list(pen.coupl$SEXO),FUN=mean)
 
 #            
 #            x
-#  1  female 731.5029 Euro
-#  2    male 859.8413 Euro
+#  1  female 703.72 Euro
+#  2    male 817.96 Euro
 
 # -----------------------------
 
@@ -169,7 +179,6 @@ DINTBL <- aggregate(pen.coupl$INC.TOT,by=list(pen.coupl$SEXO),FUN=mean)
 pen.coupl <- pen.coupl %>% mutate(bw = factor(ifelse(INCOME>200+INCOME_p,"breadwinner","less or equal income")))
 
                                                               
-pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
 round(prop.table(table(pen.coupl$bw, pen.coupl$SEXO),2), digits=2)
 
 ### For men this effect could be interesting
@@ -195,18 +204,6 @@ pen.coupl <- within(pen.coupl, age.diff.c <- relevel(age.diff.c, ref = "same age
    scale_fill_discrete(name = "")+
    theme_minimal()
  
-### %%%%%%%%%%%%%%%%%%%%%%% ###
-### Reference group changes ###
- 
- # Edit partnerdeath variable
- table(pen.coupl$partner.death)
-pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
-
- # Partner education
-pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
-
-
- 
 ##### 2. Descriptive Statistics - Overview
  
 # 2.0 A factor variable for the event for easier descriptive analysis
@@ -222,9 +219,10 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  round(prop.table(table(pen.coupl$event,pen.coupl$event_p),2),digits = 3) # Column Percentage
  # -----------------------------  
  #         censor_p   dead_p
- #  censor  0.889      0.802
- #  dead    0.111      0.198
- # -----------------------------  
+ #  censor  0.880      0.796
+ #  dead    0.120      0.204
+ # ----------------------------- 
+ chisq.test(pen.coupl$event,pen.coupl$event_p)
  
  
  ## visual exploring exit by age and partner age in 2011
@@ -244,8 +242,8 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  round(prop.table(table(pen.coupl$exit,pen.coupl$SEXO),2),digits = 2)    ## column percentage
  # -----------------------------  
  #           female   male
- # censored   0.93%  0.83%
- # dead       0.07%  0.17%
+ # censored   0.92%  0.81%
+ # dead       0.08%  0.19%
  # -----------------------------
  
  
@@ -275,7 +273,7 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  # -----------------------------  
  #   records    n.max  n.start   events   median  0.95LCL  0.95UCL 
- #  227374.0  65320.0    941.0  27712.0     85.8     85.7     85.9
+ #  202929.0  59849.0   8423.0  26663.0     86.0     85.9     86.1
  #  median and confidence interval values are higher than for the total population
  # ----------------------------- 
  
@@ -307,7 +305,7 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
    geom_step() +
    scale_y_continuous(name = "Survival Probability")                  +
    scale_x_continuous(name = "Age")                                   +
-   xlim(60, 99)                                                       +
+   xlim(65, 99)                                                       +
    scale_color_manual(values = c("orange", "darkgrey"), name="")      +
    theme_minimal()
  
@@ -320,6 +318,38 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
  ###### !!! New! Contribution years are excluded
  ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###### 
+
+ # --------------------  
+ # Reference categories
+ # --------------------
+ 
+ # Household Income Variable
+ 
+ # 3 income groups
+ 
+ # pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "more than 1500 Euro"))
+ 
+ pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "less than 1000 Euro"))
+ 
+
+ 
+ 
+ # 4 income groups
+ pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "more than 2000 Euro"))
+ 
+ # pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "less than 1000 Euro"))
+ 
+ pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "1000-1500 Euro"))
+ 
+ # breadwinner variable
+ pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
+ 
+ # Edit partnerdeath variable
+ table(pen.coupl$partner.death)
+ pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
+ 
+ # Partner education
+ pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
  
  #### 4.2 Cox PH Regression Models
  
@@ -327,31 +357,43 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # It can be assumed that the used covariates are tested and passed the test - others (like the room number were removed)
  
  
- ## 4.2.0.5 Models with only household income
+ ## 4.2.0.5 Models with only household income - three categories (!)
  
- cox.inc.m <- coxph(Surv(time = entry.age.r,
+ cox.inc.m.3 <- coxph(Surv(time = entry.age.r,
                          time2 = exit.age,
-                         event = event)~ HHINC, data = subset(pen.coupl,SEXO=="male"))
+                         event = event)~ HHINC.3, data = subset(pen.coupl,SEXO=="male"))
  
- cox.inc.f <- coxph(Surv(time = entry.age.r,
+ cox.inc.f.3 <- coxph(Surv(time = entry.age.r,
                          time2 = exit.age,
-                         event = event)~ HHINC, data = subset(pen.coupl,SEXO=="female"))
+                         event = event)~ HHINC.3, data = subset(pen.coupl,SEXO=="female"))
  
- summary(cox.inc.m)
- summary(cox.inc.f)
+ summary(cox.inc.m.3)
+ summary(cox.inc.f.3)
  
+ ## 4.2.0.99 Models with only household income - four categories (!)
+ 
+ cox.inc.m.4 <- coxph(Surv(time = entry.age.r,
+                         time2 = exit.age,
+                         event = event)~ HHINC.4, data = subset(pen.coupl,SEXO=="male"))
+ 
+ cox.inc.f.4 <- coxph(Surv(time = entry.age.r,
+                         time2 = exit.age,
+                         event = event)~ HHINC.4, data = subset(pen.coupl,SEXO=="female"))
+ 
+ summary(cox.inc.m.4)
+ summary(cox.inc.f.4)
  
  
  ## 4.2.1 Stratified Model
  
- COX.STR <- coxph(Surv(time = entry.age.r,
-                       time2 = exit.age,
-                       event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                       DIS_p + ESREAL5_p +  mobil + HousReg + hh +
-                       strata(SEXO)
-                       ,data = pen.coupl)
- summary(COX.STR)
- ggforest(COX.STR)
+ # COX.STR <- coxph(Surv(time = entry.age.r,
+ #                       time2 = exit.age,
+ #                       event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+ #                       DIS_p + ESREAL5_p +  mobil + HousReg + hh +
+ #                       strata(SEXO)
+ #                       ,data = pen.coupl)
+ # summary(COX.STR)
+ # ggforest(COX.STR)
  
  # ----------------------------- 
  # Similar to what have been observed before, the households with the minimum income have the strongest mortality
@@ -362,28 +404,28 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ## 4.2.2 Comparison with and interaction model
  
  
- part.separate <- lapply(split(retire, retire$SEXO),
-                        FUN = function(DF) {
-                          coxph(Surv(time=entry.age.r,
-                                     time2=exit.age,
-                                     event=event) ~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                     DIS_p + ESREAL5_p +  mobil + HousReg + hh, pen.coupl)
-                        })
- part.separate
- 
- ## 3.2.4 Model including interaction effects
- part.interaction.sex <- coxph(formula = Surv(time=entry.age.r,
-                                             time2=exit.age,
-                                             event=event) ~ (HHINC + DIS + ESREAL5 + FNAC +  p.surv + 
-                                                               age.diff.c + DIS_p + ESREAL5_p +  
-                                                               mobil + HousReg + hh)*SEXO - SEXO + strata(SEXO),
-                              data    = pen.coupl,
-                              ties    = c("efron","breslow","exact")[1])
- part.interaction.sex
+ # part.separate <- lapply(split(retire, retire$SEXO),
+ #                        FUN = function(DF) {
+ #                          coxph(Surv(time=entry.age.r,
+ #                                     time2=exit.age,
+ #                                     event=event) ~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+ #                                     DIS_p + ESREAL5_p +  mobil + HousReg + hh, pen.coupl)
+ #                        })
+ # part.separate
+ # 
+ # ## 3.2.4 Model including interaction effects
+ # part.interaction.sex <- coxph(formula = Surv(time=entry.age.r,
+ #                                             time2=exit.age,
+ #                                             event=event) ~ (HHINC + DIS + ESREAL5 + FNAC +  p.surv + 
+ #                                                               age.diff.c + DIS_p + ESREAL5_p +  
+ #                                                               mobil + HousReg + hh)*SEXO - SEXO + strata(SEXO),
+ #                              data    = pen.coupl,
+ #                              ties    = c("efron","breslow","exact")[1])
+ # part.interaction.sex
  
  # ----------------------------- 
  ### Compare the stratified model to the interaction model - (ANOvA)
- anova(part.interaction.sex,  COX.STR)
+ # anova(part.interaction.sex,  COX.STR)
  
  #    loglik   Chisq  Df  P(>|Chi|)    
  # 1 -258193                        
@@ -397,15 +439,15 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # Male population
  COX.MALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC.4 + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                        DIS_p + ESREAL5_p + car + HousReg + hh + bw
                         ,data = subset(pen.coupl,SEXO=="male"))
  
  # Female population
  COX.FEMALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC.4 + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                        DIS_p + ESREAL5_p + car + HousReg + hh + bw
                    ,data = subset(pen.coupl,SEXO=="female"))
  
  
