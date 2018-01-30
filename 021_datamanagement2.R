@@ -108,12 +108,12 @@ retire <- sscc %>%
   dplyr::mutate(DIS = ifelse(!is.na(start.date_Disability),1,0))
 
 
-           ### leaves us with 854385 individuals
+           ### leaves us with 757665 individuals
            
 summary(retire$entry.age.r)  
 hist(retire$entry.age.r,breaks=34)
 #     Min. 1st Qu.  Median    Mean  3rd Qu.     Max. 
-#    61.00   65.61   70.96   72.47   77.96   95.00
+#   65.00   67.19   72.68   73.69   78.83   95.00 
 # The distribution of entry ages looks reasonable - especially the high number of 65 years old 
 # where disabled people could only enter with age 65 (there were 5 years where)
   
@@ -231,10 +231,10 @@ retire <- retire %>% dplyr::mutate(INCOME = ifelse(income_Retirement>0,income_Re
  
  ### Alternative B  with 3 categories
  
- retire <- retire %>% mutate(pensize.3 = factor(ifelse(retire$INCOME<1000, "less than 1000 Euro",
-                                                       ifelse(retire$INCOME<1500, "1000-1499 Euro", "more than 1500 Euro"))))
+ retire <- retire %>% mutate(pensize.3 = factor(ifelse(retire$INCOME<600, "less than 600 Euro",
+                                                       ifelse(retire$INCOME<1200, "600-1199 Euro", "more than 1200 Euro"))))
  ## change reference for the pension size variable to the highest income category
- retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1500 Euro"))
+ retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
  
  round(prop.table(table(retire$pensize.3,retire$SEXO),2),2) # column percentage
  
