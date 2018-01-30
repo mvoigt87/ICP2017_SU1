@@ -83,7 +83,7 @@ rm(r.test,part.R, id.a, id.b)
 
 cbind(colnames(pen.coupl))
 
-r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:43)) %>% 
+r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:48)) %>% 
   # delete/rename the kIDcon variable
   mutate(PID = kIDcon) %>%
   # rename the kID variable
@@ -93,7 +93,7 @@ r.test.a <- pen.coupl %>% dplyr::select(c(1:3,11:29,33:43)) %>%
 cbind(colnames(r.test.a))
   # add p to colnames to identify the partner variable
 colnames(r.test.a)[1:20] <- str_c( colnames(r.test.a)[1:20],"_p" )
-colnames(r.test.a)[22:32] <- str_c( colnames(r.test.a)[22:32],"_p" )
+colnames(r.test.a)[22:32] <- str_c( colnames(r.test.a)[22:38],"_p" )
 tbl_df(r.test.a)
 
 
@@ -117,7 +117,7 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
    # 1.4.2 Calculate Household income
    # theoretically a time varying variable depending on the widowhood status
    ## for now a simplified version
-   mutate(hhincome=ifelse(partner.death == 0,INCOME+INCOME_p,INC.TOT)) %>% 
+   mutate(hhincome=ifelse(partner.death == 0,INCOME+INCOME_p,INC.CW)) %>% 
    
    # 1.4.3 Edit variable number of household members
    mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
@@ -140,13 +140,22 @@ pen.coupl <- pen.coupl %>% mutate(HHINC = factor(ifelse(hhincome<1000,"less than
                                                          ifelse(hhincome<=2000,"1000-2000 Euro","more than 2000 Euro"))))
  
 pen.coupl <- within(pen.coupl, HHINC <- relevel(HHINC, ref = "more than 2000 Euro"))
+
  
+## 1.4.5 Distribution invites to look at 4 groups (less than 1000 Euro, 1000-1999, more then 2000)
+
+
+pen.coupl <- pen.coupl %>% mutate(HHINC.4G = factor(ifelse(hhincome<1000,"less than 1000 Euro",
+                                                        ifelse(hhincome<=1500,"1000-1500 Euro",
+                                                               ifelse(hhincome<=2000,"1500-2000 Euro","more than 2000 Euro")))))
+
+pen.coupl <- within(pen.coupl, HHINC.4G <- relevel(HHINC.4G, ref = "more than 2000 Euro"))
 
 
 # -----------------------------
 # average income in numbers for the descriptive tables
 
-DINTBL <- aggregate(pen.coupl$INC.TOT,by=list(pen.coupl$SEXO),FUN=mean)
+DINTBL <- aggregate(pen.coupl$INC.CW,by=list(pen.coupl$SEXO),FUN=mean)
 
 #            
 #            x
@@ -397,15 +406,15 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # Male population
  COX.MALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC.4G + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                                        DIS_p + ESREAL5_p + car + HousReg + hh + bw
                         ,data = subset(pen.coupl,SEXO=="male"))
  
  # Female population
  COX.FEMALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
-                        event = event)~ HHINC + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
-                        DIS_p + ESREAL5_p +  mobil + HousReg + hh + bw
+                        event = event)~ HHINC.4G + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+                        DIS_p + ESREAL5_p + car + HousReg + hh + bw
                    ,data = subset(pen.coupl,SEXO=="female"))
  
  
