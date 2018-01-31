@@ -455,11 +455,6 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  summary(COX.MALE)
  summary(COX.FEMALE)
  
- ## PH Check
- cox.zph(COX.MALE)
- cox.zph(COX.FEMALE)
- 
- 
  #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
             #### Test CODE ####
  
