@@ -92,6 +92,8 @@ cbind(colnames(r.test.a))
   # add p to colnames to identify the partner variable
 colnames(r.test.a)[1:20] <- str_c( colnames(r.test.a)[1:20],"_p" )
 colnames(r.test.a)[22:38] <- str_c( colnames(r.test.a)[22:38],"_p" )
+
+
 tbl_df(r.test.a)
 
 
@@ -143,15 +145,12 @@ pen.coupl <- pen.coupl %>% mutate(HHINC.3 = factor(ifelse(hhincome<1000,"less th
                                                          ifelse(hhincome<=1500,"1000-1500 Euro","more than 1500 Euro"))))
  
 
-
- 
 ## 1.4.5 Distribution invites to look at 4 groups (less than 1000 Euro, 1000-1499 Euro, 1500-1999 Euro, more then 2000)
 
 
 pen.coupl <- pen.coupl %>% mutate(HHINC.4 = factor(ifelse(hhincome<1000,"less than 1000 Euro",
                                                         ifelse(hhincome<=1500,"1000-1500 Euro",
                                                                ifelse(hhincome<=2000,"1500-2000 Euro","more than 2000 Euro")))))
-
 
 # -----------------------------
 # average income in numbers for the descriptive tables
@@ -314,11 +313,264 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # (age at 2011) were mostly living without partner at the time of their entry - so we do not follow up so many of them)
  # ----------------------------- 
  
+ ############################################## 
+ ### KME - by sex and income (3 categories) ###
+ ##############################################
  
- ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ######
- ###### !!! New! Contribution years are excluded
- ###### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###### 
+ ## males - less than 1000
+ 
+ km.m.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                                  time2 = exit.age,
+                                  event = event)~1, data = subset(pen.coupl, SEXO=="male" & HHINC.3 == "less than 1000 Euro")), 
+                       type = "kaplan-meier")
+ ## males - 1000-1500
+ km.m.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                 time2 = exit.age,
+                                 event = event)~1, data = subset(pen.coupl, SEXO=="male" & HHINC.3 == "1000-1500 Euro")), 
+                      type = "kaplan-meier")
+ ## males - more than 1500
+ km.m.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                  time2 = exit.age,
+                                  event = event)~1, data = subset(pen.coupl, SEXO=="male" & HHINC.3 == "more than 1500 Euro")),
+                       type = "kaplan-meier")
+ ## ------------------------
+ 
+ ## females - less than 1000
+ 
+ km.f.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                                  time2 = exit.age,
+                                  event = event)~1, data = subset(pen.coupl, SEXO=="female" & HHINC.3 == "less than 1000 Euro")), 
+                       type = "kaplan-meier")
+ ## males - 1000-1500
+ km.f.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                 time2 = exit.age,
+                                 event = event)~1, data = subset(pen.coupl, SEXO=="female" & HHINC.3 == "1000-1500 Euro")), 
+                      type = "kaplan-meier")
+ ## males - more than 1500
+ km.f.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                  time2 = exit.age,
+                                  event = event)~1, data = subset(pen.coupl, SEXO=="female" & HHINC.3 == "more than 1500 Euro")),
+                       type = "kaplan-meier")
 
+ 
+ km.male.l1000 <- tidy(km.m.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="less than 1000")
+ km.male.1500 <- tidy(km.m.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="1000-1500")
+ km.male.m1500 <- tidy(km.m.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="more than 1500")
+ 
+ km.female.l1000 <- tidy(km.f.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="less than 1000")
+ km.female.1500 <- tidy(km.f.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="1000-1500")
+ km.female.m1500 <- tidy(km.f.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="more than 1500")
+ 
+ 
+ km.sex.inc <- union(km.male.l1000,km.male.1500) %>% union(km.male.m1500) %>% union(km.female.l1000) %>% union(km.female.1500) %>% 
+   union(km.female.m1500)
+ 
+ # KME Plot by sex and hh income
+ 
+ km.sex.inc %>% ggplot(aes(x=time, y=estimate, color=HHINC))          +
+   geom_step()                                                        +
+   scale_y_continuous(name = "Survival Probability")                  +
+   scale_x_continuous(name = "Age")                                   +
+   scale_colour_brewer(name="",palette = "Set1")                      + 
+   facet_grid(. ~ sex)                                                +
+   theme_bw()
+ 
+ # delete the help files
+ rm(km.female,km.female.l1000, km.female.1500, km.female.m1500,km.male, km.male.l1000, km.male.1500, km.male.m1500, km.sex, 
+    km.sex.inc, km.f.1500, km.f.l1000, km.f.m1500, km.m.l1000, km.m.1500, km.m.m1500, KM.S1, KM.S2, KM1)
+ 
+ ################################### 
+ ### KME - by sex and disability ###
+ ###################################
+ 
+ ## males/disabled
+ 
+ km.m.d <- survfit(coxph(Surv(time = entry.age.r,
+                              time2 = exit.age,
+                              event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==1)),
+                   type = "kaplan-meier")
+ 
+ ## males/not disabled
+ 
+ km.m.nd <- survfit(coxph(Surv(time = entry.age.r,
+                              time2 = exit.age,
+                              event = event)~0, data = subset(pen.coupl, SEXO=="male" & DIS==0)),
+                   type = "kaplan-meier")
+ 
+ ## females/disabled
+ 
+ km.f.d <- survfit(coxph(Surv(time = entry.age.r,
+                              time2 = exit.age,
+                              event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==1)),
+                   type = "kaplan-meier")
+ 
+ ## females/not disabled
+ 
+ km.f.nd <- survfit(coxph(Surv(time = entry.age.r,
+                              time2 = exit.age,
+                              event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==0)),
+                   type = "kaplan-meier")
+ 
+ ## tidy them up
+ 
+ KM.MALE.DIS <- tidy(km.m.d) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(dis="disability allowance")
+ KM.MALE.NDIS <- tidy(km.m.nd) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(dis="no disability")
+ 
+ KM.FEMALE.DIS <- tidy(km.f.d) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(dis="disability allowance")
+ KM.FEMALE.NDIS <- tidy(km.f.nd) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(dis="no disability")
+ 
+ ## tie them up
+ KM.DIS <- union(KM.MALE.DIS, KM.MALE.NDIS) %>% union(KM.FEMALE.DIS) %>% union(KM.FEMALE.NDIS)
+ 
+ ## plot them
+ 
+ KM.DIS %>% ggplot(aes(x=time, y=estimate, color=dis))  +
+   geom_step()                                          +
+   scale_x_continuous(name="Age")                       +
+   scale_y_continuous(name = "Survival Probability")    +
+   scale_color_brewer(name=" ", palette = "Set1")       +
+   facet_grid(.~sex)                                    +
+   theme_bw()
+ 
+ rm(KM.DIS, KM.FEMALE.DIS, KM.FEMALE.NDIS, KM.MALE.DIS, KM.MALE.NDIS, km.f.d, km.f.nd, km.m.d, km.m.nd)
+ 
+ ######################################################
+ ### KME - by sex, disability and 3 income category ###
+ ######################################################
+ 
+ ## males, disabled, less than 1000
+  
+ km.m.d.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                          time2 = exit.age,
+                          event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==1 & HHINC.3=="less than 1000 Euro")),
+                   type = "kaplan-meier")
+ 
+ ## males, disabled, 1000 - 1500
+ 
+ km.m.d.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                time2 = exit.age,
+                                event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==1 & HHINC.3=="1000-1500 Euro")),
+                        type = "kaplan-meier")
+ 
+ ## males, disabled, more than 1500
+ 
+ km.m.d.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                   time2 = exit.age,
+                                   event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==1 & HHINC.3=="more than 1500 Euro")),
+                        type = "kaplan-meier")
+ 
+ ## males, not disabled, less than 1000
+ 
+ km.m.nd.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                                    time2 = exit.age,
+                                    event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==0 & HHINC.3=="less than 1000 Euro")),
+                         type = "kaplan-meier")
+ 
+ ## males, not disabled, 1000 - 1500
+ 
+ km.m.nd.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                   time2 = exit.age,
+                                   event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==0 & HHINC.3=="1000-1500 Euro")),
+                        type = "kaplan-meier")
+ 
+ ## males, not disabled, more than 1500
+ 
+ km.m.nd.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                   time2 = exit.age,
+                                   event = event)~1, data = subset(pen.coupl, SEXO=="male" & DIS==0 & HHINC.3=="more than 1500 Euro")),
+                        type = "kaplan-meier") 
+ 
+ ### --- Females --- ###
+ 
+ ## females, disabled, less than 1000
+ 
+ km.f.d.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                                    time2 = exit.age,
+                                    event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==1 & HHINC.3=="less than 1000 Euro")),
+                         type = "kaplan-meier")
+ 
+ ## females, disabled, 1000 - 1500
+ 
+ km.f.d.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                   time2 = exit.age,
+                                   event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==1 & HHINC.3=="1000-1500 Euro")),
+                        type = "kaplan-meier")
+ 
+ ## females, disabled, more than 1500
+ 
+ km.f.d.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                   time2 = exit.age,
+                                   event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==1 & HHINC.3=="more than 1500 Euro")),
+                        type = "kaplan-meier")
+ 
+ ## females, not disabled, less than 1000
+ 
+ km.f.nd.l1000 <- survfit(coxph(Surv(time = entry.age.r,
+                                     time2 = exit.age,
+                                     event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==0 & HHINC.3=="less than 1000 Euro")),
+                          type = "kaplan-meier")
+ 
+ ## females, not disabled, 1000 - 1500
+ 
+ km.f.nd.1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                    time2 = exit.age,
+                                    event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==0 & HHINC.3=="1000-1500 Euro")),
+                         type = "kaplan-meier")
+ 
+ ## females, not disabled, more than 1500
+ 
+ km.f.nd.m1500 <- survfit(coxph(Surv(time = entry.age.r,
+                                    time2 = exit.age,
+                                    event = event)~1, data = subset(pen.coupl, SEXO=="female" & DIS==0 & HHINC.3=="more than 1500 Euro")),
+                         type = "kaplan-meier") 
+ 
+ ### tidy them up
+ 
+ KM.MALE.D.L1000 <- tidy(km.m.d.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+ KM.MALE.D.1500 <- tidy(km.m.d.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ KM.MALE.D.M1500 <- tidy(km.m.d.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500")
+ KM.MALE.ND.L1000 <- tidy(km.m.nd.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+ KM.MALE.ND.1500 <- tidy(km.m.nd.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ KM.MALE.ND.M1500 <- tidy(km.m.nd.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500")
+ 
+ KM.FEMALE.D.L1000 <- tidy(km.f.d.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+ KM.FEMALE.D.1500 <- tidy(km.f.d.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ KM.FEMALE.D.M1500 <- tidy(km.f.d.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500")
+ KM.FEMALE.ND.L1000 <- tidy(km.f.nd.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+ KM.FEMALE.ND.1500 <- tidy(km.f.nd.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ KM.FEMALE.ND.M1500 <- tidy(km.f.nd.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500")
+ 
+ ## tie them together
+ 
+ KM.SEX.DIS.INC <- union(KM.MALE.D.L1000, KM.MALE.D.1500) %>% union(KM.MALE.D.M1500) %>% union(KM.MALE.ND.L1000) %>% 
+                   union(KM.MALE.ND.1500) %>% union(KM.MALE.ND.M1500) %>% union(KM.FEMALE.D.L1000) %>% 
+                   union(KM.FEMALE.D.1500) %>% union(KM.FEMALE.D.M1500) %>% union(KM.FEMALE.ND.L1000) %>% 
+                   union(KM.FEMALE.ND.1500) %>% union(KM.FEMALE.ND.M1500)
+ 
+ ### and plot them
+ 
+ KM.SEX.DIS.INC %>%  ggplot(aes(x=time, y=estimate, color=HHINC, linetype=dis)) +
+   geom_step()                                                                  +
+   scale_color_brewer(name= " ", palette = "Set1")                              +
+   scale_x_continuous(name="Age")                                               +
+   scale_y_continuous(name="Survival Probability")                              +
+   scale_linetype_discrete(name="")                                             +
+   facet_grid(.~sex)                                                            +
+   theme_bw()
+ 
+ 
  # --------------------  
  # Reference categories
  # --------------------
@@ -332,24 +584,24 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "less than 1000 Euro"))
  
 
- 
- 
  # 4 income groups
  pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "more than 2000 Euro"))
  
  # pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "less than 1000 Euro"))
  
- pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "1000-1500 Euro"))
+ # pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "1000-1500 Euro"))
  
  # breadwinner variable
  pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
  
  # Edit partnerdeath variable
- table(pen.coupl$partner.death)
  pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
  
  # Partner education
  pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
+ 
+ 
+ ####################################################################################################
  
  #### 4.2 Cox PH Regression Models
  
@@ -439,14 +691,22 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # Male population
  COX.MALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
+<<<<<<< HEAD
                         event = event)~ HHINC.4 + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+=======
+                        event = event)~ HHINC.4G + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+>>>>>>> cab372fd2fa68ff52bc6011b71025f1b2b41fe72
                                         DIS_p + ESREAL5_p + car + HousReg + hh + bw
                         ,data = subset(pen.coupl,SEXO=="male"))
  
  # Female population
  COX.FEMALE <- coxph(Surv(time = entry.age.r,
                         time2 = exit.age,
+<<<<<<< HEAD
                         event = event)~ HHINC.4 + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+=======
+                        event = event)~ HHINC.4G + DIS + ESREAL5 + FNAC +  p.surv + age.diff.c +
+>>>>>>> cab372fd2fa68ff52bc6011b71025f1b2b41fe72
                         DIS_p + ESREAL5_p + car + HousReg + hh + bw
                    ,data = subset(pen.coupl,SEXO=="female"))
  
