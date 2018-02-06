@@ -177,9 +177,9 @@ retire <- retire %>% dplyr::mutate(event = as.numeric(ifelse(cause=="death",1,0)
         
 ##### 2.3 Sex and Pensionsize
         
-
       table(retire$SEXO)
-retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
+
+      retire <- retire %>% mutate(SEXO = factor(ifelse(SEXO=="Men","male","female")))
       
    ### Retirement income
       summary(retire$income_Retirement)
@@ -291,6 +291,14 @@ retire <- within(retire, pensize.CW <- relevel(pensize.CW, ref = "more than 2000
  
  retire <- within(retire, ESREAL5 <- relevel(ESREAL5, ref = "No or Incomplete Educ."))
  round(prop.table(table(retire$ESREAL5)), digits = 2)
+ 
+ 
+ ## Education variable - further collapse to three categories (Changed after sensitivity analysis - 06.02.18)
+ 
+ retire$ESREAL3 <- revalue(retire$ESREAL5, c("No or Incomplete Educ."="No or Incomplete Educ.", "Primary Educ."="Primary Educ.",
+                                                   "Secondary Educ."="Secondary or higher Educ.", "Tertiary Educ."="Secondary or higher Educ."))
+ 
+ round(prop.table(table(retire$ESREAL3)), digits = 2)
  
  # ------------------- #
  # CIVIL STATUS        #
