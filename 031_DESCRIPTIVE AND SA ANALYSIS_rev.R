@@ -115,12 +115,12 @@ chisq.test(table(retire$event, retire$ESREAL5))
 
   retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",651.85,974.16)) %>% 
     ggplot(aes(x=INCOME, color=SEXO)) +
-    geom_histogram(fill="white", alpha=0.5, position="dodge",binwidth = 50) +
+    geom_histogram(aes(y=50*..density..),fill="white", alpha=0.5, position="dodge",binwidth = 50) +
     geom_vline(aes(xintercept=grp.mean, color=SEXO),
                linetype="dashed") +
     scale_color_brewer(palette="Dark2", name=" ") +
     scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(0,3500)) +
-    scale_y_continuous(name = " ") +
+    scale_y_continuous(name = "Relative Frequency") +
     theme_bw()
   
   
@@ -156,13 +156,6 @@ chisq.test(table(retire$event, retire$ESREAL5))
   #   dead             0.20%            0.18%           0.18%               0.12%
   #   X-squared = 45996, df = 19677, p-value < 2.2e-16
   # ----------------------------- 
-  
-  # --------------------------------------- #
-  ## Table event distribution by income with 3 categories
-  
-  round(prop.table(table(retire$event, retire$pensize.3),2),digits = 2)
-  chisq.test(table(retire$exit, retire$pensize.3))
-  
 
 #### %%%%%%%%%%%%%%%%%%%%%% ####
 ## Event by pension income by 3 categories
@@ -526,40 +519,40 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
 ### 3.2.4 Sex/Pension Size (categorical - 3 cats) ###
 ### --------------------------------------------- ###
    
-   # less than 1000 / male
+   # less than 600 / male
    km5.a1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, SEXO=="male" & pensize.3=="less than 1000 Euro")), 
+                                event=event)~1, data=subset(retire, SEXO=="male" & pensize.3=="less than 600 Euro")), 
                      data=subset(retire,SEXO=="male" & pensize.3=="less than 1000 Euro"), type="kaplan-meier")
-   # less than 1000 / female
+   # less than 600 / female
    km5.b1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="less than 1000 Euro")), 
+                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="less than 600 Euro")), 
                      data=subset(retire,SEXO=="female" & pensize.3=="less than 1000 Euro"), type="kaplan-meier")
    
    
    
-   # 1000-1499 / male
+   # 600-1199 / male
    km5.a2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="1000-1499 Euro")), 
+                                event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="600-1199 Euro")), 
                      data=subset(retire,SEXO=="male" & pensize.3=="1000-1499 Euro"), type="kaplan-meier")
-   # 1000-1499 / female
+   # 1000-1199 / female
    km5.b2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="1000-1499 Euro")), 
+                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="600-1199 Euro")), 
                      data=subset(retire,SEXO=="female" & pensize.3=="1000-1499 Euro"), type="kaplan-meier")
    
    
-   # 1500+ / male
+   # 1200+ / male
    km5.a3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="more than 1500 Euro")), 
+                                event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="more than 1200 Euro")), 
                      data=subset(retire,SEXO=="male" & pensize.3=="more than 1500 Euro"), type="kaplan-meier")
-   # 1500+ / female
+   # 1200+ / female
    km5.b3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="more than 1500 Euro")), 
+                                event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="more than 1200 Euro")), 
                      data=subset(retire,SEXO=="female" & pensize.3=="more than 1500 Euro"), type="kaplan-meier")
    
    # extract the values for the visualization
@@ -599,57 +592,57 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
 ### 3.2.6 Impact of disability - stratified KME (3 income groups)   ###
 ### --------------------------------------------------------------- ###
 
-   # less than 1000 / disabled / male
+   # less than 600 / disabled / male
    km6.a1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="less than 1000 Euro" & SEXO=="male")), 
-                     data=subset(retire,DIS==1 & pensize.3=="less than 1000 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="less than 600 Euro" & SEXO=="male")), 
+                     data=subset(retire,DIS==1 & pensize.3=="less than 600 Euro" & SEXO=="male"), type="kaplan-meier")
    
-   # less than 1000 / not disabled / male
+   # less than 600 / not disabled / male
    km6.b1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="less than 1000 Euro"& SEXO=="male")), 
-                     data=subset(retire,DIS==0 & pensize.3=="less than 1000 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="less than 600 Euro"& SEXO=="male")), 
+                     data=subset(retire,DIS==0 & pensize.3=="less than 600 Euro" & SEXO=="male"), type="kaplan-meier")
    
-   # 1000-1499 / disabled / male
+   # 600-1199 / disabled / male
    km6.a2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="1000-1499 Euro" & SEXO=="male")), 
-                     data=subset(retire,DIS==1 & pensize.3=="1000-1499 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="600-1199 Euro" & SEXO=="male")), 
+                     data=subset(retire,DIS==1 & pensize.3=="600-1199 Euro" & SEXO=="male"), type="kaplan-meier")
    
-   # 1000-1499 / not disabled / male
+   # 600-1199 / not disabled / male
    km6.b2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="1000-1499 Euro" & SEXO=="male")), 
-                     data=subset(retire,DIS==0 & pensize.3=="1000-1499 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="600-1199 Euro" & SEXO=="male")), 
+                     data=subset(retire,DIS==0 & pensize.3=="600-1199 Euro" & SEXO=="male"), type="kaplan-meier")
    
-   # more than 1500 / disabled / male
+   # more than 1200 / disabled / male
    km6.a3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="more than 1500 Euro" & SEXO=="male")), 
-                     data=subset(retire,DIS==1 & pensize.3=="more than 1500 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="more than 1200 Euro" & SEXO=="male")), 
+                     data=subset(retire,DIS==1 & pensize.3=="more than 1200 Euro" & SEXO=="male"), type="kaplan-meier")
    
-   # more than 1500 / not disabled / male
+   # more than 1200 / not disabled / male
    km6.b3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="more than 1500 Euro" & SEXO=="male")), 
-                     data=subset(retire,DIS==0 & pensize.3=="more than 1500 Euro" & SEXO=="male"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="more than 1200 Euro" & SEXO=="male")), 
+                     data=subset(retire,DIS==0 & pensize.3=="more than 1200 Euro" & SEXO=="male"), type="kaplan-meier")
    
    
    ### Extract information for plotting
    
    KM6.A <- tidy(km6.a1) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="less than 600 Euro") %>% dplyr:: mutate (sex="male")
    KM6.B <- tidy(km6.b1) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="less than 600 Euro") %>% dplyr:: mutate (sex="male")
    KM6.C <- tidy(km6.a2) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="600-1199 Euro") %>% dplyr:: mutate (sex="male")
    KM6.D <- tidy(km6.b2) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="600-1199 Euro") %>% dplyr:: mutate (sex="male")
    KM6.E <- tidy(km6.a3) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="more than 1200 Euro") %>% dplyr:: mutate (sex="male")
    KM6.F <- tidy(km6.b3) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro") %>% dplyr:: mutate (sex="male")
+     dplyr::mutate(pensize="more than 1200 Euro") %>% dplyr:: mutate (sex="male")
    
    KM_DIS.M <- dplyr::union(KM6.A,KM6.B) %>% dplyr::union(KM6.C) %>% dplyr::union(KM6.D) %>% dplyr::union(KM6.E) %>% 
               dplyr::union(KM6.F)
@@ -659,54 +652,54 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
    # less than 1000 / disabled / male
    km6.c1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="less than 1000 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==1 & pensize.3=="less than 1000 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="less than 600 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==1 & pensize.3=="less than 600 Euro" & SEXO=="female"), type="kaplan-meier")
    
    # less than 1000 / not disabled / male
    km6.d1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="less than 1000 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==0 & pensize.3=="less than 1000 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="less than 600 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==0 & pensize.3=="less than 600 Euro" & SEXO=="female"), type="kaplan-meier")
    
    # 1000-1499 / disabled / male
    km6.c2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="1000-1499 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==1 & pensize.3=="1000-1499 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="600-1199 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==1 & pensize.3=="600-1199 Euro" & SEXO=="female"), type="kaplan-meier")
    
    # 1000-1499 / not disabled / male
    km6.d2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="1000-1499 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==0 & pensize.3=="1000-1499 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="600-1199 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==0 & pensize.3=="600-1199 Euro" & SEXO=="female"), type="kaplan-meier")
    
    # more than 1500 / disabled / male
    km6.c3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="more than 1500 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==1 & pensize.3=="more than 1500 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire, DIS==1 & pensize.3=="more than 1200 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==1 & pensize.3=="more than 1200 Euro" & SEXO=="female"), type="kaplan-meier")
    
    # more than 1500 / not disabled / male
    km6.d3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
-                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="more than 1500 Euro" & SEXO=="female")), 
-                     data=subset(retire,DIS==0 & pensize.3=="more than 1500 Euro" & SEXO=="female"), type="kaplan-meier")
+                                event=event)~1, data=subset(retire,DIS==0 & pensize.3=="more than 1200 Euro" & SEXO=="female")), 
+                     data=subset(retire,DIS==0 & pensize.3=="more than 1200 Euro" & SEXO=="female"), type="kaplan-meier")
    
    
    ### Extract information for plotting
    
    KM7.A <- tidy(km6.c1) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="less than 600 Euro") %>% dplyr:: mutate (sex="female")
    KM7.B <- tidy(km6.d1) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="less than 600 Euro") %>% dplyr:: mutate (sex="female")
    KM7.C <- tidy(km6.c2) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="600-1199 Euro") %>% dplyr:: mutate (sex="female")
    KM7.D <- tidy(km6.d2) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="600-1199 Euro") %>% dplyr:: mutate (sex="female")
    KM7.E <- tidy(km6.c3) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="Disability") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="more than 1200 Euro") %>% dplyr:: mutate (sex="female")
    KM7.F <- tidy(km6.d3) %>% dplyr::select(estimate,time) %>% dplyr::mutate(DIS="No Disability") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro") %>% dplyr:: mutate (sex="female")
+     dplyr::mutate(pensize="more than 1200 Euro") %>% dplyr:: mutate (sex="female")
    
    KM_DIS.F <- dplyr::union(KM7.A,KM7.B) %>% dplyr::union(KM7.C) %>% dplyr::union(KM7.D) %>% dplyr::union(KM7.E) %>% 
      dplyr::union(KM7.F) 
@@ -727,7 +720,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
       scale_x_continuous(name = "Age")                           +
       scale_color_brewer(palette="Dark2", name=" ")              +
       scale_linetype_discrete(name="")                           +
-      theme_bw()
+      theme_minimal()
      
 
   # clean up the mess
@@ -749,7 +742,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
      retire$HousReg <- as.factor(as.character(retire$HousReg))
      retire <- within(retire, HousReg <- relevel(HousReg, ref = "owned"))
      retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
-     retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1500 Euro"))
+     retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
 
   ### ------------------------------------------------------------------------------------------------- ### 
      
