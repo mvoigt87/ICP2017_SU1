@@ -137,7 +137,22 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
   # mean = 1395; median = 1193  => ! difference between first and third quarter = 280 Euro only
   # from the histogram it probably makes sense to look at the ones with less than 1000, 1000-1500, and more than that
   
- 
+   
+   DINTBL.sd <- aggregate(pen.coupl$hhincome,by=list(pen.coupl$SEXO),FUN=mean)
+   
+   #   Group.1        x
+   # 1  female 1373.389
+   # 2    male 1416.340
+   
+   pen.coupl %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",1373.389,1416.34)) %>% 
+     ggplot(aes(x=hhincome, color=SEXO)) +
+     geom_histogram(fill="white", alpha=0.5, position="dodge",binwidth = 50) +
+     geom_vline(aes(xintercept=grp.mean, color=SEXO),
+                linetype="dashed") +
+     scale_color_brewer(palette="Dark2", name=" ") +
+     scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(1,4000)) +
+     scale_y_continuous(name = " ") +
+     theme_bw()
 
 ## 1.4.4 Distribution invites to look at 3 groups (less than 1000, 1000-1500, and more than that)
  
@@ -158,22 +173,10 @@ pen.coupl <- pen.coupl %>% mutate(HHINC.4 = factor(ifelse(hhincome<1000,"less th
 
 DINTBL <- aggregate(pen.coupl$INC.CW,by=list(pen.coupl$SEXO),FUN=mean)
 
-#            
 #            x
 #  1  female 703.72 Euro
 #  2    male 817.96 Euro
-
 # -----------------------------
-
-
-## 1.4.5 Breadwinner variable - who earns at least Euro more than the partner
-# 
-#   pen.coupl %>% mutate(main.earner = factor(ifelse(INCOME>50+INCOME_p,"breadwinner",
-#                                                  ifelse(INCOME<INCOME_p-50,"lower income","equal"))))
-# 
-# round(prop.table(table(pen.coupl$main.earner)),digits = 2)
-# round(prop.table(table(pen.coupl$main.earner,pen.coupl$SEXO),2),digits = 2)
-
 ## For the model -  breadwinner variable
  
 pen.coupl <- pen.coupl %>% mutate(bw = factor(ifelse(INCOME>200+INCOME_p,"breadwinner","less or equal income")))
@@ -306,11 +309,11 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  km.female <- tidy(KM.S2) %>% dplyr::select(time,estimate) %>% mutate(sex="female")
  
  km.sex <- union(km.male,km.female)
+ 
  km.sex %>% ggplot(aes(x=time, y=estimate, color=sex)) +
    geom_step() +
    scale_y_continuous(name = "Survival Probability")                  +
    scale_x_continuous(name = "Age")                                   +
-   xlim(65, 99)                                                       +
    scale_color_manual(values = c("orange", "darkgrey"), name="")      +
    theme_minimal()
  
@@ -359,19 +362,29 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
                        type = "kaplan-meier")
 
  
- km.male.l1000 <- tidy(km.m.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="less than 1000")
- km.male.1500 <- tidy(km.m.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="1000-1500")
- km.male.m1500 <- tidy(km.m.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="more than 1500")
+ km.male.l1000 <- tidy(km.m.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="0-1000 Euro")
+ km.male.1500 <- tidy(km.m.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ km.male.m1500 <- tidy(km.m.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="male") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  
- km.female.l1000 <- tidy(km.f.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="less than 1000")
- km.female.1500 <- tidy(km.f.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="1000-1500")
- km.female.m1500 <- tidy(km.f.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="more than 1500")
+ km.female.l1000 <- tidy(km.f.l1000) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="0-1000 Euro")
+ km.female.1500 <- tidy(km.f.1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="1000-1500 Euro")
+ km.female.m1500 <- tidy(km.f.m1500) %>% dplyr::select(time,estimate) %>% dplyr::mutate(sex="female") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  
  
  km.sex.inc <- union(km.male.l1000,km.male.1500) %>% union(km.male.m1500) %>% union(km.female.l1000) %>% union(km.female.1500) %>% 
    union(km.female.m1500)
  
- # KME Plot by sex and hh income
+ # KME Plot by sex and hh income (same plot) 
+ 
+ km.sex.inc %>% ggplot(aes(x=time, y=estimate, color=HHINC, linetype=sex))          +
+   geom_step()                                                        +
+   scale_y_continuous(name = "Survival Probability")                  +
+   scale_x_continuous(name = "Age")                                   +
+   scale_colour_brewer(name="",palette = "Set1")                      + 
+   scale_linetype_discrete(name="")                                   +
+   theme_minimal()
+ 
+ # KME Plot by sex and hh income (facet grid version)
  
  km.sex.inc %>% ggplot(aes(x=time, y=estimate, color=HHINC))          +
    geom_step()                                                        +
@@ -428,13 +441,23 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ## tie them up
  KM.DIS <- union(KM.MALE.DIS, KM.MALE.NDIS) %>% union(KM.FEMALE.DIS) %>% union(KM.FEMALE.NDIS)
  
- ## plot them
+ ## plot (one plot)
+ 
+ KM.DIS %>% ggplot(aes(x=time, y=estimate, color=dis, linetype=sex))  +
+   geom_step()                                          +
+   scale_x_continuous(name="Age")                       +
+   scale_y_continuous(name = "Survival Probability")    +
+   scale_colour_manual(values = c("orange", "darkgrey"), name="")     +
+   scale_linetype_discrete(name="")                           +
+   theme_bw()
+ 
+ ## plot (facet grid)
  
  KM.DIS %>% ggplot(aes(x=time, y=estimate, color=dis))  +
    geom_step()                                          +
    scale_x_continuous(name="Age")                       +
    scale_y_continuous(name = "Survival Probability")    +
-   scale_color_brewer(name=" ", palette = "Set1")       +
+   scale_colour_manual(values = c("orange", "darkgrey"), name=" ")     +
    facet_grid(.~sex)                                    +
    theme_bw()
  
@@ -533,30 +556,30 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ### tidy them up
  
  KM.MALE.D.L1000 <- tidy(km.m.d.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
-   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="0-1000 Euro")
  KM.MALE.D.1500 <- tidy(km.m.d.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
    dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="1000-1500 Euro")
  KM.MALE.D.M1500 <- tidy(km.m.d.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
-   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500")
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  KM.MALE.ND.L1000 <- tidy(km.m.nd.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
-   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="0-1000 Euro")
  KM.MALE.ND.1500 <- tidy(km.m.nd.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
    dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="1000-1500 Euro")
  KM.MALE.ND.M1500 <- tidy(km.m.nd.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="male") %>% 
-   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500")
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  
  KM.FEMALE.D.L1000 <- tidy(km.f.d.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
-   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="0-1000 Euro")
  KM.FEMALE.D.1500 <- tidy(km.f.d.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
    dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="1000-1500 Euro")
  KM.FEMALE.D.M1500 <- tidy(km.f.d.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
-   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500")
+   dplyr::mutate(dis="disability allowance") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  KM.FEMALE.ND.L1000 <- tidy(km.f.nd.l1000) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
-   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="less than 1000 Euro")
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="0-1000 Euro")
  KM.FEMALE.ND.1500 <- tidy(km.f.nd.1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
    dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="1000-1500 Euro")
  KM.FEMALE.ND.M1500 <- tidy(km.f.nd.m1500) %>% dplyr::select(time, estimate) %>% dplyr::mutate(sex="female") %>% 
-   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500")
+   dplyr::mutate(dis="no disability") %>% dplyr::mutate(HHINC="more than 1500 Euro")
  
  ## tie them together
  
@@ -620,7 +643,9 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # Edit partnerdeath variable
  pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
  
-
+ # Household ownership variable
+ pen.coupl$HousReg <- as.factor(pen.coupl$HousReg)
+ pen.coupl <- within(pen.coupl, HousReg <- relevel(HousReg, ref = "owned")) 
  
  
  ####################################################################################################
@@ -705,14 +730,14 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ## Wealth Variables + Direct Variables (Disability or death of the partner not included)
  COX.MALE.B <- coxph(Surv(time = entry.age.r,
                           time2 = exit.age,
-                          event = event)~ HHINC.3 + ESREAL3 + mobil +  HousReg, 
+                          event = event)~ HHINC.3 + ESREAL5 + mobil +  HousReg, 
                     data = subset(pen.coupl,SEXO=="male"))
  
  ## Full Model
  COX.MALE.C <- coxph(Surv(time = entry.age.r,
                           time2 = exit.age,
-                          event = event)~ HHINC.3 + ESREAL3 + mobil +  p.surv + DIS + FNAC +
-                                          DIS_p + ESREAL3_p + HousReg + hh + bw, 
+                          event = event)~ HHINC.3 + ESREAL5 + mobil  +  HousReg +  p.surv + DIS + FNAC +
+                                          DIS_p + ESREAL5_p + hh + bw, 
                     data = subset(pen.coupl,SEXO=="male"))
  
 
@@ -728,20 +753,24 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  ## Wealth variables
  COX.FEMALE.B <- coxph(Surv(time = entry.age.r,
                           time2 = exit.age,
-                          event = event)~ HHINC.3 + ESREAL3 + mobil +  HousReg,
+                          event = event)~ HHINC.3 + ESREAL5 + mobil +  HousReg,
                      data = subset(pen.coupl,SEXO=="female"))
  
  ## Full Model
  COX.FEMALE.C <- coxph(Surv(time = entry.age.r,
                           time2 = exit.age,
-                          event = event)~ HHINC.3 + ESREAL3 + mobil +  p.surv + DIS + FNAC+
-                       DIS_p + ESREAL3_p + HousReg + hh + bw, 
+                          event = event)~ HHINC.3 + ESREAL5 + mobil  +  HousReg +  p.surv + DIS + FNAC+
+                       DIS_p + ESREAL5_p + hh + bw, 
                      data = subset(pen.coupl,SEXO=="female"))
  
  
  ## -----------------
- 
+ summary(COX.MALE.A)
+ summary(COX.MALE.B)
  summary(COX.MALE.C)
+
+ summary(COX.FEMALE.A)
+ summary(COX.FEMALE.B)
  summary(COX.FEMALE.C)
  
  ##### 5. Model Output
@@ -750,26 +779,32 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  stargazer(COX.MALE.A, COX.MALE.B, COX.MALE.C, title="Cox PH Model - Male Population",no.space=F, 
            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-           covariate.labels=c("1000-1499  Eur/month","$<$ 1000 Eur/month",
-                              "No or incomplete Ed.","Primary Ed.", "No car avail.", "Widowed", "Received Disability Pension",
-                              "Birth year (cohort)","Partner disabled", "Partner Ed. Incomplete", "Partner Primary Ed.", 
-                              "Does own house/apt", "Lives only with Partner", "Breadwinner"),
-           single.row=TRUE, apply.coef = exp)
+           covariate.labels=c("$<$ 1000 Eur/month","$>$ 1500 Eur/month",
+                              "Tertiary Educ.","Secondary Educ.","Primary Educ.", "No car avail.", "Does own house/apt",
+                              "Widowed", "Received Disability Pension",
+                              "Birth year (cohort)","Partner disabled", "Partner Tertiary Educ.","Partner Secondary Educ.",
+                              "Partner Primary Educ.", 
+                              "Lives only with Partner", "Breadwinner"),
+           single.row=FALSE, apply.coef = exp)
  
 
  ## 5.2. Women
  
  stargazer(COX.FEMALE.A, COX.FEMALE.B, COX.FEMALE.C, title="Cox PH Model - Female Population",no.space=F, 
            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-           covariate.labels=c("1000-1499  Eur/month","$<$ 1000 Eur/month",
-                              "No or incomplete Ed.","Primary Ed.", "No car avail.", "Widowed", "Received Disability Pension",
-                              "Birth year (cohort)","Partner disabled", "Partner Ed. Incomplete", "Partner Primary Ed.", 
-                              "Does own house/apt", "Lives only with Partner", "Breadwinner"),
-           single.row=TRUE, apply.coef = exp)
+           covariate.labels=c("$<$ 1000 Eur/month","$>$ 1500 Eur/month",
+                              "Tertiary Educ.","Secondary Educ.","Primary Educ.", "No car avail.", "Does own house/apt",
+                              "Widowed", "Received Disability Pension",
+                              "Birth year (cohort)","Partner disabled", "Partner Tertiary Educ.","Partner Secondary Educ.",
+                              "Partner Primary Educ.", 
+                              "Lives only with Partner", "Breadwinner"),
+           single.row=FALSE, apply.coef = exp)
  
  
  #### $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ####
  
-
+### save partner data set
+ 
+ save(pen.coupl, file='041_RETPART.RData')
  
  

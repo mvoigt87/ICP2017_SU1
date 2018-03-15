@@ -523,12 +523,12 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
    km5.a1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire, SEXO=="male" & pensize.3=="less than 600 Euro")), 
-                     data=subset(retire,SEXO=="male" & pensize.3=="less than 1000 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="male" & pensize.3=="less than 600 Euro"), type="kaplan-meier")
    # less than 600 / female
    km5.b1 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="less than 600 Euro")), 
-                     data=subset(retire,SEXO=="female" & pensize.3=="less than 1000 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="female" & pensize.3=="less than 600 Euro"), type="kaplan-meier")
    
    
    
@@ -536,39 +536,39 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
    km5.a2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="600-1199 Euro")), 
-                     data=subset(retire,SEXO=="male" & pensize.3=="1000-1499 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="male" & pensize.3=="600-1199 Euro"), type="kaplan-meier")
    # 1000-1199 / female
    km5.b2 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="600-1199 Euro")), 
-                     data=subset(retire,SEXO=="female" & pensize.3=="1000-1499 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="female" & pensize.3=="600-1199 Euro"), type="kaplan-meier")
    
    
    # 1200+ / male
    km5.a3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire,SEXO=="male" & pensize.3=="more than 1200 Euro")), 
-                     data=subset(retire,SEXO=="male" & pensize.3=="more than 1500 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="male" & pensize.3=="more than 1200 Euro"), type="kaplan-meier")
    # 1200+ / female
    km5.b3 <- survfit(coxph(Surv(time=entry.age.r,
                                 time2=exit.age,
                                 event=event)~1, data=subset(retire,SEXO=="female" & pensize.3=="more than 1200 Euro")), 
-                     data=subset(retire,SEXO=="female" & pensize.3=="more than 1500 Euro"), type="kaplan-meier")
+                     data=subset(retire,SEXO=="female" & pensize.3=="more than 1200 Euro"), type="kaplan-meier")
    
    # extract the values for the visualization
    
    KM5A <- tidy(km5.a1) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="male") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro")
+     dplyr::mutate(pensize="0 - 600 Euro")
    KM5B <- tidy(km5.b1) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="female") %>% 
-     dplyr::mutate(pensize="less than 1000 Euro")
+     dplyr::mutate(pensize="0 - 600 Euro")
    KM5C <- tidy(km5.a2) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="male") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro")
+     dplyr::mutate(pensize="600-1199 Euro")
    KM5D <- tidy(km5.b2) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="female") %>% 
-     dplyr::mutate(pensize="1000-1499 Euro")
+     dplyr::mutate(pensize="600-1199 Euro")
    KM5E <- tidy(km5.a3) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="male") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro")
+     dplyr::mutate(pensize="more than 1200 Euro")
    KM5F <- tidy(km5.b3) %>% dplyr::select(estimate, time) %>% dplyr::mutate(sex="female") %>% 
-     dplyr::mutate(pensize="more than 1500 Euro")
+     dplyr::mutate(pensize="more than 1200 Euro")
    
    ## Combine the single KMEs to one graph
    
@@ -582,7 +582,17 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
      scale_color_brewer(palette="Dark2", name=" ")              +
      scale_linetype_discrete(name="")                           +
      theme_minimal()
-      
+    
+   # plot 3 indiv. income categories (using facet grit instead of linetyp)
+   
+   KM_3CAT %>% ggplot() +
+     geom_step(mapping = aes(x=time, y=estimate, color=pensize)) +
+     facet_grid(.~sex)                                          +
+     scale_y_continuous(name = "Survival Probability")          +
+     scale_x_continuous(name = "Age")                           +
+     scale_color_brewer(palette="Dark2", name=" ")              +
+     theme_minimal()
+   
     # Same visual result as for the 4 categories - relative proportional expected trajectory for men but not for women
    
    # clean
@@ -742,7 +752,10 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
      retire$HousReg <- as.factor(as.character(retire$HousReg))
      retire <- within(retire, HousReg <- relevel(HousReg, ref = "owned"))
      retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
-     retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
+     # retire <- within(retire, pensize <- relevel(pensize, ref = "650-999 Euro"))
+     # retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
+     retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "600-1199 Euro"))
+     
 
   ### ------------------------------------------------------------------------------------------------- ### 
      
@@ -753,10 +766,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                           time2=exit.age,
                           event=event)~pensize, data = retire)
   
-
-  summary(cox.pen.1)
-  rm(cox.pen.1)
-  
+  # 3 category variable
   cox.pen.2 <- coxph(Surv(time=entry.age.r,
                           time2=exit.age,
                           event=event)~pensize.3, data = retire)
@@ -783,6 +793,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                           time2=exit.age,
                           event=event)~pensize, data = subset(retire,SEXO=="male"))
   
+  # 3 category income
   cox.pen.2.m <- coxph(Surv(time=entry.age.r,
                             time2=exit.age,
                             event=event)~pensize.3, data = subset(retire,SEXO=="male"))
@@ -795,6 +806,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                             time2=exit.age,
                             event=event)~pensize, data = subset(retire,SEXO=="female"))
   
+  # 3 category income
   cox.pen.2.f <- coxph(Surv(time=entry.age.r,
                             time2=exit.age,
                             event=event)~pensize.3, data = subset(retire,SEXO=="female"))
@@ -805,10 +817,10 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   
   ### in Latex table
   
-  stargazer(cox.pen.2.m,cox.pen.2.f,
-            title="Cox PH Model",no.space=F, 
-  ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Hazard Ratios"),
-  covariate.labels=c("1000-1499 Eur/month","$<$ 1000 Eur/month"), single.row=TRUE, apply.coef = exp)
+  # stargazer(cox.pen.2.m,cox.pen.2.f,
+  #           title="Cox PH Model",no.space=F, 
+  # ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Hazard Ratios"),
+  # covariate.labels=c("1000-1499 Eur/month","$<$ 1000 Eur/month"), single.row=TRUE, apply.coef = exp)
   
   
   
@@ -933,6 +945,73 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   summary(cox.female.c)
   
   
+  ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+  ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+  
+  
+  ### 3.3.3 Two survival models for men and women (3 categories)
+  #
+  # To account for the different age at death distribution as well as the different life course trajectories,
+  # the hazards of dying for the two genders will estimated separately in two models
+  
+  ## male population
+  ## ---------------
+  
+  # Model with only income
+  cox.male.3a <- coxph(Surv(time=entry.age.r,
+                           time2=exit.age,
+                           event=event) ~ pensize.3,
+                      data=subset(retire, SEXO=="male"))
+  
+  
+  # Adding the other wealth variables
+  cox.male.3b <- coxph(Surv(time=entry.age.r,
+                           time2=exit.age,
+                           event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg,
+                      data=subset(retire, SEXO=="male"))
+  
+  # Adding contextual variables
+  cox.male.3c <- coxph(Surv(time=entry.age.r,
+                           time2=exit.age,
+                           event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                        FNAC + DIS + civil.status + hh,
+                      data=subset(retire, SEXO=="male"))
+  
+  
+  ## female population
+  ## ---------------
+  
+  # Model with only income 
+  cox.female.3a <- coxph(Surv(time=entry.age.r,
+                             time2=exit.age,
+                             event=event) ~ pensize.3,
+                        data=subset(retire, SEXO=="female"))
+  
+  # Adding the other wealth variables
+  cox.female.3b <- coxph(Surv(time=entry.age.r,
+                             time2=exit.age,
+                             event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg,
+                        data=subset(retire, SEXO=="female"))
+  
+  # Adding contextual variables
+  cox.female.3c <- coxph(Surv(time=entry.age.r,
+                             time2=exit.age,
+                             event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                          FNAC + DIS + civil.status + hh,
+                        data=subset(retire, SEXO=="female"))
+  
+  
+  ### Model results
+  summary(cox.male.3a)
+  summary(cox.male.3b)
+  summary(cox.male.3c)
+  cox.zph( cox.male.3a)
+  
+  summary(cox.female.3a)
+  summary(cox.female.3b)
+  summary(cox.female.3c)
+  
+  
   
   
   ### ------------------------------------------------------------------------------------------------- ###
@@ -943,25 +1022,25 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   ## 4.1. Separate Models - Males (3 Cat)
   
   
-  # stargazer(cox.male.a,cox.male.b,cox.female.c, title="Cox PH Model",no.space=F,
-  #           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-  #           covariate.labels=c("1000-1499  Eur/month","$<$ 1000 Eur/month",
-  #                              "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
-  #                              "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
-  #                              "Single","Widowed","2 Person Household"),
-  #           single.row=TRUE, apply.coef = exp)
+  stargazer(cox.male.3a,cox.male.3b,cox.male.3c, title="Cox PH Model",no.space=F,
+            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+            covariate.labels=c("$>$ 1200 Euro/month","$<$ 600 Euro/month",
+                               "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
+                               "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
+                               "Single","Widowed","2 Person Household"),
+            single.row=FALSE, apply.coef = exp)
   # 
   # 
   # 
   # ## 4.1. Separate Models - Females (3 Cat)
-  # 
-  # stargazer(cox.female.a,cox.female.b, cox.female.c, title="Cox PH Model",no.space=F,
-  #           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
-  #           covariate.labels=c("1000-1499  Eur/month","$<$ 1000 Eur/month",
-  #                              "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
-  #                              "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
-  #                              "Single","Widowed","2 Person Household"),
-  #           single.row=TRUE, apply.coef = exp)
+  
+  stargazer(cox.female.3a,cox.female.3b, cox.female.3c, title="Cox PH Model",no.space=F,
+            ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+            covariate.labels=c("$>$ 1200 Euro/month","$<$ 600 Euro/month",
+                               "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
+                               "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
+                               "Single","Widowed","2 Person Household"),
+            single.row=FALSE, apply.coef = exp)
   
 ### --------------------------------------------------------------------------------------------------------------- ###  
   
