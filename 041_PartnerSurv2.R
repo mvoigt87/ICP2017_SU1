@@ -167,49 +167,40 @@ pen.coupl <- pen.coupl %>% mutate(HHINC.3 = factor(ifelse(hhincome<1000,"less th
 pen.coupl <- pen.coupl %>% mutate(HHINC.4 = factor(ifelse(hhincome<1000,"less than 1000 Euro",
                                                         ifelse(hhincome<=1500,"1000-1500 Euro",
                                                                ifelse(hhincome<=2000,"1500-2000 Euro","more than 2000 Euro")))))
-
-# -----------------------------
-# average income in numbers for the descriptive tables
-
-DINTBL <- aggregate(pen.coupl$INC.CW,by=list(pen.coupl$SEXO),FUN=mean)
-
-#            x
-#  1  female 703.72 Euro
-#  2    male 817.96 Euro
-# -----------------------------
+###########################################
 ## For the model -  breadwinner variable
- 
+
 pen.coupl <- pen.coupl %>% mutate(bw = factor(ifelse(INCOME>200+INCOME_p,"breadwinner","less or equal income")))
 
-                                                              
+
 round(prop.table(table(pen.coupl$bw, pen.coupl$SEXO),2), digits=2)
 
- # --- For men this effect could be interesting
+# --- For men this effect could be interesting
 
 
 
-                                                       
+
 ## 1.5 Age difference of the partners
- 
+
 pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>% 
-   ## and as categorical variable (checked for minimum value)
-   mutate(age.diff.c = as.factor(ifelse(age.diff < -10, ">10 y younger",
-                                        ifelse(age.diff <= - 1,"1-10 y younger",
-                                               ifelse(age.diff <= 1, "same age",
-                                                      ifelse(age.diff <= 10,"1-10 y older",
-                                                             ">10 y older"))))))
- 
+  ## and as categorical variable (checked for minimum value)
+  mutate(age.diff.c = as.factor(ifelse(age.diff < -10, ">10 y younger",
+                                       ifelse(age.diff <= - 1,"1-10 y younger",
+                                              ifelse(age.diff <= 1, "same age",
+                                                     ifelse(age.diff <= 10,"1-10 y older",
+                                                            ">10 y older"))))))
+
 pen.coupl <- within(pen.coupl, age.diff.c <- relevel(age.diff.c, ref = "same age")) 
 
 # -----------
- summary(pen.coupl$age.diff)     # minimum value -30.78
- 
- pen.coupl %>% ggplot(aes(x=age.diff, fill=SEXO)) +
-   geom_histogram(bins=50)+
-   scale_fill_discrete(name = "")+
-   theme_minimal()
+summary(pen.coupl$age.diff)     # minimum value -30.78
 
- 
+pen.coupl %>% ggplot(aes(x=age.diff, fill=SEXO)) +
+  geom_histogram(bins=50)+
+  scale_fill_discrete(name = "")+
+  theme_minimal()
+
+
 ##### ------------------------------------ 
 ##### 2. Descriptive Statistics - Overview
 ##### ------------------------------------  
@@ -247,7 +238,7 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  
  ## 2.2 Sex Differences in Mortality
- round(prop.table(table(pen.coupl$exit,pen.coupl$SEXO),2),digits = 2)    ## column percentage
+ round(prop.table(table(pen.coupl$exit,pen.coupl$SEXO),2),digits = 3)    ## column percentage
  # -----------------------------  
  #           female   male
  # censored   0.92%  0.81%
@@ -260,11 +251,38 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
    geom_histogram(bins=40)+
    scale_fill_discrete(name = "") +
    facet_grid(. ~ SEXO)   
+ ## Median age at death
+ summary(pen.coupl$exit.age[pen.coupl$event==1])
+ # men
+ summary(pen.coupl$exit.age[pen.coupl$event==1 & pen.coupl$SEXO=="male"])
  
+ # women
+ summary(pen.coupl$exit.age[pen.coupl$event==1 & pen.coupl$SEXO=="female"])
+ 
+ summary(pen.coupl$exit.age[pen.coupl$event==0])
  
  ## 2.3. Differences in Mortality by education
  round(prop.table(table(pen.coupl$exit,pen.coupl$ESREAL5),2),2)
  round(prop.table(table(pen.coupl$exit,pen.coupl$ESREAL5_p),2),2) 
+ 
+ # -----------------------------
+ # average income in numbers for the descriptive tables
+ 
+ DINTBL <- aggregate(pen.coupl$INC.CW,by=list(pen.coupl$SEXO),FUN=mean)
+ 
+ #            x
+ #  1  female 703.72 Euro
+ #  2    male 817.96 Euro
+ # -----------------------------
+ 
+ # Income Distribution
+ # -----------------------------
+ round(prop.table(table(pen.coupl$SEXO,pen.coupl$pensize.3),1),digits = 3) # Column Percentage
+ 
+ # Education Distribution
+ # -----------------------------
+ round(prop.table(table(pen.coupl$SEXO,pen.coupl$ESREAL5),1),digits = 3) # Column Percentage
+ 
  
  
  ##### ----------------------------------------------------------------------------------------------------- #####

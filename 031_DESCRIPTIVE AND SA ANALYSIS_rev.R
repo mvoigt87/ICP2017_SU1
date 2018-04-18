@@ -895,7 +895,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                            time2=exit.age,
                            event=event) ~ pensize,
                           data=subset(retire, SEXO=="male"))
-  
+
   
   # Adding the other wealth variables
   cox.male.b <- coxph(Surv(time=entry.age.r,
@@ -977,6 +977,14 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                         FNAC + DIS + civil.status + hh,
                       data=subset(retire, SEXO=="male"))
   
+        ### %%% Disability comparison
+        cox.male.3c.dis <- coxph(Surv(time=entry.age.r,
+                            time2=exit.age,
+                            event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                            FNAC + civil.status + hh + strata(DIS),
+                       data=subset(retire, SEXO=="male"))
+        
+        AIC(cox.male.3c.dis)-AIC(cox.male.3c) # quite a big difference
   
   ## female population
   ## ---------------
@@ -1000,6 +1008,14 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
                           FNAC + DIS + civil.status + hh,
                         data=subset(retire, SEXO=="female"))
   
+  ### %%% Disability comparison
+  cox.female.3c.dis <- coxph(Surv(time=entry.age.r,
+                                time2=exit.age,
+                                event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                             FNAC + civil.status + hh + strata(DIS),
+                           data=subset(retire, SEXO=="female"))
+  
+  AIC(cox.female.3c.dis) - AIC(cox.female.3c)
   
   ### Model results
   summary(cox.male.3a)
@@ -1010,6 +1026,7 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
   summary(cox.female.3a)
   summary(cox.female.3b)
   summary(cox.female.3c)
+  summary(cox.female.3c.dis)
   
   
   
@@ -1206,7 +1223,66 @@ rm(KM3, KM3.1,KM3.2,KM3.3,KM3.4,km3.a1,km3.a2,km3.a3,km3.a4)
  ### clean up one more time
  rm(cox.pen.1.m,cox.pen.2.m,cox.pen.1.f,cox.pen.2.f,cox.all.a,cox.all.b,cox.male.a,flex.ph.1,km2.a1,km2.b1,km2.p,km2b, ret.interaction.sex, ret.separate,km2.pb,
     flex.m.pen)
-
  
-
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##  
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##  
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##  
+ ## Model using pension size as normalized continuous variable
+ 
+ summary(retire$income_Retirement)
+ summary(retire$INCOME)
+ 
+ # Normalize the pension size
+ 
+ # Standard Deviation & Mean
+ SD <- sd(retire$INCOME)  # 503.1832
+ M <- mean(retire$INCOME) # 861.9560
+ 
+ retire <- retire %>% mutate(INCOME.N = (INCOME-M)/SD)
+ 
+ hist(retire$INCOME.N)
+ 
+ # Model with normalized income
+ 
+ cox.male.N <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ INCOME.N,
+                          data=subset(retire, SEXO=="male"))
+ 
+ cox.female.N <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ INCOME.N,
+                     data=subset(retire, SEXO=="female"))
+ 
+ summary(cox.male.N)
+ 
+ # Adding contextual variables
+ cox.male.3c <- coxph(Surv(time=entry.age.r,
+                             time2=exit.age,
+                             event=event) ~ INCOME.N + ESREAL5 + mobil + HousReg + 
+                          FNAC + DIS + civil.status + hh,
+                        data=subset(retire, SEXO=="male"))
+ 
+ summary(cox.male.3c)
+ 
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##  
+ ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##  
  ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ## 
+ ## For ALAP !!!
+ 
+ retire <- within(retire, ESREAL3 <- relevel(ESREAL3, ref = "Secondary or higher Educ."))
+ 
+ cox.strat.1 <- coxph(Surv(time=entry.age.r,
+                           time2=exit.age,
+                           event=event) ~ ESREAL3 + mobil + HousReg + 
+                        FNAC + DIS + civil.status + hh + strata(SEXO)
+                      , data=retire)
+ summary(cox.strat.1)
+ 
+ 
+ stargazer(cox.strat.1, title="Stratified Cox PH Model",no.space=F, 
+           ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+           covariate.labels=c("No or Incomplete Educ.","Primary Educ.", "No car avail.",
+                              "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
+                              "Single","Widowed","2 Person Household"),
+           single.row=TRUE, apply.coef = exp)
