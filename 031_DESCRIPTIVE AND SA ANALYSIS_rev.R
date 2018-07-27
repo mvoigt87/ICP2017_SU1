@@ -28,7 +28,8 @@
  library(data.table)
  library(broom)
  library(stargazer)
- 
+ # Use for a parametric model
+ library(flexsurv)
  
  ### ------------------------------------------------------------------------------------------------- ### 
  
@@ -261,9 +262,9 @@ chisq.test(table(retire$event, retire$ESREAL5))
   # -----------------------------
   
   # Visualization who died by contribution years at what age
-  retire %>% ggplot(aes(x=contrib.years_Retirement,y=exit.age))+
-    geom_point(aes(color=as.factor(event)))+ facet_grid(.~ SEXO) +
-    scale_color_discrete(name = "")
+    # retire %>% ggplot(aes(x=contrib.years_Retirement,y=exit.age))+
+    #   geom_point(aes(color=as.factor(event)))+ facet_grid(.~ SEXO) +
+    #   scale_color_discrete(name = "")
   # -----------------------------  
   ## For both sexes the deaths are concentrated in the higher ages and in the lower contribution years
   ## Graph is not as clear as before

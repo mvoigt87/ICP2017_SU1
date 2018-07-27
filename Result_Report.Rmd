@@ -1,15 +1,22 @@
 ---
 title: "Retirement Pension and Mortality Disparities in Andalusia"
 author: "Mathias Voigt"
-date: "18.04.2018"
+date: " "
 output: pdf_document
 ---
-This document contains a few graphs, tables, code chunks, and figures that are not (yet) displayed in the paper/article version which will be send to the journal. As it can be updated easily, I hope it will help us stay up-to-date with the most current developments of the analysis on the effect on individual and partner level pension and come to quick decisions about how to represent the results. It can also help us to find out which variables and what way to code them might bring the best results. I will keep this document as up-to-date as possible and save changes in the dropbox immediately.
+
+This document serves as summary for the research project on health inequalities in the retired population. It contains a few graphs, tables, code chunks, and figures that are not (yet) displayed in the paper/article version which will be send to the journal. As it can be updated easily, I hope it will help us stay up-to-date with the most current developments of the analysis on the effect on individual and partner level pension and come to quick decisions about how to represent the results. It can also help us to find out which variables and what way to code them might bring the best results. I will keep this document as up-to-date as possible and save changes in the dropbox immediately. May it help us to come to a satisfying result.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+```{r load myData, include=FALSE}
+### 0.1. Loading data set
+load("031_RETIND.RData")
+load("041_RETPART.RData")
+head(retire)
+```
 
 ```{r packages, echo=FALSE, include=FALSE}
 ### 0.2 load necessary package
@@ -23,50 +30,52 @@ library(data.table)
 library(broom)
 library(stargazer)
 library(stringr)
+source("C:/Users/y4956294S/Documents/R/EDagger.R")
 ```
 
 # Part 1 - Sample
-Since we discussed our sample composition quite a lot for this project, I thought we should keep everybody up-dated on this. To answer how health differences in the retired population of Spain are determined by social inequalities, we took a sample from the full population sample from the BDLPA which contains 734.682 cases which qualified through following characteristics:
+Since we discussed our sample composition quite a lot for this project, I thought we should keep everybody up-dated on this. To answer how health differences in the retired population of Spain are determined by social inequalities, we took a sample from the full population sample from the BDLPA which contains `r nrow(retire)` cases which qualified through following characteristics:
 
 1. Individuals registered in Andalusia in 2002 who are still alive at 2011
 2. Everybody who is eligible for receiving a public pension between 2011-2016 (including disability)
-3. Everybody between the age 65 and 95
+3. Everybody between the age 65 and 95 - this includes everybody who will turn 65 within our observation period
+4. Everybody with a retirement pension
 
 ## Who do we exclude and how might this add a bias?
+As our data covers public pensions, there are a few population groups that might be systematically excluded. Due to the setup of the analysis (focus on the working life course), it was chosen to include only individuals with active working life histories indicated through contribution to social security. Possible selection biases occur for the following groups.
+
+1. Very rich individuals with private pensions
+2. Very poor individuals who never contributed to the public pension funds
+3. Most importantly, women who took over the role as care giver or stayed home for other reasons
+
 ### Entering and Re-entering
 The BDLPA follow-up study of a cohort of individuals based on the census 2001. To my knowledge, the data we have does not capture individuals who immigrated or registered after 2002, which would for example exclude more recent retirement migrants. Even if this is a large number, selection based on this measure should not introduce to many problems to our analysis as we are interested in the ones who contributed to social security in Andalusia.
 
-## What are possible sources for selection and bias
+## Other possible sources for bias - Threaths to validity
 
 ### Disability
-In my opinion, the difficulties to distinguish the disabled early retirees from the "normal" retirees gives us the most headaches. The way the data (and the law) is structured, it is to my knowledge not possible to disentangle what part of the retirement pension of a former disabled after age 65 is based on his/her contribution to social security and what part is because of his disability.
-Our solution so far is, to include only individuals aged 65 and above (including severly disabled) and control if they have received a disability pension before their 65th birthday. This leads to the following problem:
+The difficulties to distinguish the disabled early retirees from the "normal" retirees gives me the most headaches. The way the data (and the law) is structured, it is to my knowledge not possible to disentangle what part of the retirement pension of a former disabled after age 65 is based on his/her contribution to social security and what part is because of his disability.
+Our solution for now is to include only individuals aged 65 and above (including severely disabled) and control if they have received a disability pension before their 65-th birthday. This leads to the following problem:
 
-*The assumption that higher pension income indicates a higher socioeconomic status throughout life as indicator for life time contribution to social security will not hold for the disabled population where higher "income" is probably related to more severity leading to the paradox that the highest paid individuals have the highest chances to die first
+*italics*The assumption that higher pension income indicates a higher socioeconomic status throughout life as indicator for life time contribution to social security will not hold for the disabled population where higher "income" is probably related to more severity of the disability. This will lead to the paradox that the highest paid individuals in this substantial sub-population have the highest chances to die first
 
 ### Left Truncation
-## Sample for the partner analysis
+I do not know if that is a problematic issue, but our data is left-truncated. Starting the observation at 65 introduces a survivor bias. The choice to that can however be justified by a) our interest in the retired population and b) that we do not have income information for earlier ages (only for widows and disabled individuals).
 
-<!-- ##### Study population -->
-<!--   ### To answer how health differences in the retired population of Spain are determined by social inequalities, -->
-<!--   ### the analysis is centered around the Andalusians who receive a public pension between 2011 and 2015. -->
-<!--   ### All individuals who received any form of individual active public pension are included (retirement and disability). -->
-<!--   ### The idea is that somebody is under risk from the point when he or she has entered retirement. Since data -->
-<!--   ### covers all individuals who have and entered or remained recipients of public pension between 2011 and 2015, -->
-<!--   ### Therefore, the data is left-truncated (meaning we do not observe the all person years under risk left from the -->
-<!--   ### event) and we have to account for that. Furthermore, we have to account for unobserved heterogeneity due to -->
-<!--   ### different frailties and the endogenous relationship of health - early retirement/low pention benefits - death. -->
+### Time Lag
+The time lag between observations might be a problem for the census based variables which are additionally used to measure the sociology-economic position of individuals. This would include the ownership of cars and housing. Given the age of the observed individuals it is in my opinion unlikely that there were large-scale changes with regard to these variables, however, a ten year time lag in a period of economic fluctuations can add some bias i.e. there might be individuals who owned a car in 2001 cannot drive anymore in 2011 or could not replace it. It will also be a strong assumption, as you have mentioned before, to say that there were no residential changes at older ages which could affect the house ownership status. As these are indirect measures for wealth, I assume (and this is written in the paper right now) that the distributions have not changed that much over for the population of interest.
+
+## Sample for the partner analysis
+The second sample which is used to analyze the effect of approximated household pension income is with `r nrow(pen.coupl)` individuals substantially smaller than the first one but has some interesting properties. The selection criteria are the same as for the individual pension level data set plus that we select married individuals which have been married in 2001 and still cohabit in 2011. Thus, we might lose a large number of cases but we also create a population that is relatively homogeneous and we can add explanatory power with the partners level of education among others. Given that household pension income does seem to represent overall income much better (especially for women in our case), I am tempted to explicitly focus on analyzing this sub-sample. That would however include a number of changes in the paper.
+
 # Part 2 - Analysis survival disparities of Andalusian retirees based on individual pension income
 
-```{r load myData, include=FALSE}
-### 0.1. Loading data set
-load("031_RETIND.RData")
-load("041_RETPART.RData")
-head(retire)
-```
-
 ## Male/Female survival differences
-As we have already seen in the paper presented at EPC, Andalusian women have a survival advantage over men in the generations covered by the BDLPA. Their survival curve is more "rectengular" and there is much less variation in the ages at death. The different life span disparity might be one piece of explanation for the 
+As we have already seen in the paper presented at EPC, Andalusian women have a survival advantage over men in the generations covered by the BDLPA. Their survival curve is more "rectangular" and there is much less variation in the ages at death. The different life span disparity might be one piece of explanation for the 
+```{r life span disparity, echo=FALSE, warning=FALSE}
+
+
+```
 
 ## The impact of disability
 
