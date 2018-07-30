@@ -114,16 +114,19 @@ chisq.test(table(retire$event, retire$ESREAL5))
   # 1  female  651.8494 Euro
   # 2    male  974.1605 Euro
 
-  retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",651.85,974.16)) %>% 
+### IN GREY tones
+  
+ INC.DIS <- retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",651.85,974.16)) %>% 
     ggplot(aes(x=INCOME, color=SEXO)) +
     geom_histogram(aes(y=50*..density..),fill="white", alpha=0.5, position="dodge",binwidth = 50) +
     geom_vline(aes(xintercept=grp.mean, color=SEXO),
                linetype="dashed") +
-    scale_color_brewer(palette="Dark2", name=" ") +
+    scale_color_manual(values=c("#000000", "#A9A9A9"), name=" ") +
     scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(0,3500)) +
     scale_y_continuous(name = "Relative Frequency") +
     theme_bw()
-  
+ 
+ INC.DIS <- INC.DIS + theme(legend.position = c(0.85, 0.85))
   
   # ---------------------------------------------------------- #
   # Visual test - Graph Income distribution without disability
@@ -144,6 +147,33 @@ chisq.test(table(retire$event, retire$ESREAL5))
     scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(1,3500)) +
     scale_y_continuous(name = " ") +
     theme_bw()
+  
+  
+  # ---------------------------------------------------------- #
+  # Visual test - Graph Income distribution death and alive
+  
+  # doesn´t mean much as there is no control for age
+  
+  DINTBL.ev <- aggregate(retire$INCOME,by=list(retire$event),FUN=mean)
+  
+  # alive 874.7381
+  # dead 807.0715
+  
+  
+  INC.E.DIS <- retire %>% dplyr::mutate(event = as.character(ifelse(event==0, "alive", "dead"))) %>% 
+    dplyr::mutate(grp.mean = ifelse(event=="alive",874.73,807.07)) %>% 
+    ggplot(aes(x=INCOME, color=event)) +
+    geom_histogram(aes(y=50*..density..),fill="white", alpha=0.5, position="dodge",binwidth = 50) +
+    geom_vline(aes(xintercept=grp.mean, color=event),
+               linetype="dashed") +
+    scale_color_manual(values=c("#000000", "#A9A9A9"), name=" ") +
+    scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(0,3500)) +
+    scale_y_continuous(name = "Relative Frequency") +
+    theme_bw()
+  
+  INC.E.DIS <- INC.E.DIS + theme(legend.position = c(0.85, 0.85))
+  
+  # Well this is interesting as it almost completely overlaying
   
   # --------------------------------------- #
   ## Table event distribution by income with 4 categories

@@ -285,6 +285,30 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  
  
  
+ # Couples with or without children in house
+ # ------------------------------------------
+ 
+ pen.coupl <- pen.coupl %>% dplyr::mutate(CONPARHIJ = as.character(CONPARHIJ))
+ 
+ pen.coupl$CONPARHIJ <- revalue (pen.coupl$CONPARHIJ, c("2"="Only Partner","5"="1 child in hh", "6"="2 children in hh",
+                            "7"="3 children in hh", "8"="4 or more children in hh"))
+ 
+ round(prop.table(table(pen.coupl$CONPARHIJ)),digits = 3)
+ 
+ #   Only Partner   1 child in hh         2 children in hh         3 children in hh    4 or more children in hh
+ #   
+ #    relative freqiuencies
+ #
+ #    0.414                0.305                    0.182                    0.073                        0.026
+ 
+ ### New variable - hijos en mismo lugar
+ 
+ pen.coupl$hijo <- revalue (pen.coupl$CONPARHIJ, c("Only Partner"="Only Partner","1 child in hh"="One child in hh", 
+                                                      "2 children in hh"="Two or more children in hh",
+                                                      "3 children in hh"="Two or more children in hh", 
+                                                      "4 or more children in hh"="Two or more children in hh"))
+ 
+ 
  ##### ----------------------------------------------------------------------------------------------------- #####
  
  ##### 4. Survival Analysis
