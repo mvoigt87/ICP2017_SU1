@@ -74,7 +74,14 @@
    # -----------------------------
    #clear concentration of deaths at the older ages - bump around the age 83
  
+  # Sex differences in the age at death distribution
  
+  sex.diff <- retire %>% dplyr::filter(event==1)
+ 
+  sex.diff %>% ggplot(aes(x=exit.age))+
+    geom_histogram(bins=40)+
+    facet_grid(.~ SEXO) +
+    theme_bw()
 
 ### ------------------------------------------------------------------------------------------------------------ ###  
  
@@ -107,7 +114,7 @@ chisq.test(table(retire$event, retire$ESREAL5))
 ## 1.2.2 Event by pension income
 
   # --------------------------------------- #
-  # Visual test - Graph Income distribution
+  # Visual test - Graph Income distribution   - !RELATIVE FREQUENCY!
 
   DINTBL.sw <- aggregate(retire$INCOME,by=list(retire$SEXO),FUN=mean)
 
@@ -140,12 +147,12 @@ chisq.test(table(retire$event, retire$ESREAL5))
   
   retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",479.64,765.69)) %>% 
     ggplot(aes(x=income_Retirement, color=SEXO)) +
-    geom_histogram(fill="white", alpha=0.5, position="dodge",binwidth = 50) +
+    geom_histogram(aes(y=50*..density..),fill="white", alpha=0.5, position="dodge",binwidth = 50) +
     geom_vline(aes(xintercept=grp.mean, color=SEXO),
                linetype="dashed") +
     scale_color_brewer(palette="Dark2", name=" ") +
     scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(1,3500)) +
-    scale_y_continuous(name = " ") +
+    scale_y_continuous(name = "Relative Frequency") +
     theme_bw()
   
   

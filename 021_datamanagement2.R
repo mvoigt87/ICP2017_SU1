@@ -34,7 +34,7 @@ library(data.table)
   ### the analysis is centered around the Andalusians who receive a public pension between 2011 and 2015.
   ### All individuals who received any form of individual active public pension are included (retirement and disability).
   ### The idea is that somebody is under risk from the point when he or she has entered retirement. Since data
-  ### covers all individuals who have and entered or remained recipients of public pension between 2011 and 2015,
+  ### covers all individuals who have entered or remained recipients of public pension between 2011 and 2015,
   ### Therefore, the data is left-truncated (meaning we do not observe the all person years under risk left from the
   ### event) and we have to account for that. Furthermore, we have to account for unobserved heterogeneity due to
   ### different frailties and the endogenous relationship of health - early retirement/low pention benefits - death.
