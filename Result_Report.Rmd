@@ -5,7 +5,7 @@ date: " "
 output: pdf_document
 ---
 
-This document serves as summary for the research project on health inequalities in the retired population. It contains a few graphs, tables, code chunks, and figures that are not (yet) displayed in the paper/article version which will be send to the journal. As it can be updated easily, I hope it will help us stay up-to-date with the most current developments of the analysis on the effect on individual and partner level pension and come to quick decisions about how to represent the results. It can also help us to find out which variables and what way to code them might bring the best results. I will keep this document as up-to-date as possible and save changes in the dropbox immediately. May it help us to come to a satisfying result.
+This document serves as summary for the research project on health inequalities in the retired population. It contains a few graphs, tables, code chunks, and figures that are not (yet) displayed in the paper/article version which will be send to the journal. As it can be updated easily, I hope it will help us stay up-to-date with the most current developments of the analysis on the effect on individual and partner level pension and come to quick decisions about how to represent the results. It can also help us to find out which variables and what way to code them might bring the best results. I will keep this document as up-to-date as possible and save changes in the dropbox immediately. May it help us to come to a result that everybody can live with.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -30,71 +30,357 @@ library(data.table)
 library(broom)
 library(stargazer)
 library(stringr)
+# Use for a parametric model
+library(flexsurv)
 source("C:/Users/y4956294S/Documents/R/EDagger.R")
 ```
 
 # Part 1 - Sample
-Since we discussed our sample composition quite a lot for this project, I thought we should keep everybody up-dated on this. To answer how health differences in the retired population of Spain are determined by social inequalities, we took a sample from the full population sample from the BDLPA which contains `r nrow(retire)` cases which qualified through following characteristics:
+To answer how health differences in the retired population of Spain are determined by social inequalities, we took a sample from the full population sample from the BDLPA which contains `r nrow(retire)` cases which qualified through following characteristics:
 
 1. Individuals registered in Andalusia in 2002 who are still alive at 2011
 2. Everybody who is eligible for receiving a public pension between 2011-2016 (including disability)
-3. Everybody between the age 65 and 95 - this includes everybody who will turn 65 within our observation period
-4. Everybody with a retirement pension
+3. Everybody between the age 65 and 95 - this includes everybody who will turn 65 during the observation period
+4. Everybody who receives a public retirement pension at some point during the observation period
 
-## Who do we exclude and how might this add a bias?
+## Who do we exclude and how this affects validity?
 As our data covers public pensions, there are a few population groups that might be systematically excluded. Due to the setup of the analysis (focus on the working life course), it was chosen to include only individuals with active working life histories indicated through contribution to social security. Possible selection biases occur for the following groups.
 
 1. Very rich individuals with private pensions
 2. Very poor individuals who never contributed to the public pension funds
 3. Most importantly, women who took over the role as care giver or stayed home for other reasons
 
-### Entering and Re-entering
+## Entering and Re-entering
 The BDLPA follow-up study of a cohort of individuals based on the census 2001. To my knowledge, the data we have does not capture individuals who immigrated or registered after 2002, which would for example exclude more recent retirement migrants. Even if this is a large number, selection based on this measure should not introduce to many problems to our analysis as we are interested in the ones who contributed to social security in Andalusia.
 
-## Other possible sources for bias - Threaths to validity
+# The partner data
+Given the meager results from the individual level analysis (a Null finding with regard to income), it was proposed to use a sub population of the aforementioned sample which would include `r nrow(pen.coupl)` individuals who were married and cohabitating between 2001 and 2011 and where both partners receive some form of public pension. From a theoretical point of view, we would be able to use an approximation of the household income (both partners combined pension). The practical advantages would be that we find expected income effects for this sub-population. **I would like to use exclusively this subsample of the population for the following analysis despite the flaws (for instance the selecitivity for women) and the extra work of changing the paper.**
 
-### Disability
-The difficulties to distinguish the disabled early retirees from the "normal" retirees gives me the most headaches. The way the data (and the law) is structured, it is to my knowledge not possible to disentangle what part of the retirement pension of a former disabled after age 65 is based on his/her contribution to social security and what part is because of his disability.
-Our solution for now is to include only individuals aged 65 and above (including severely disabled) and control if they have received a disability pension before their 65-th birthday. This leads to the following problem:
+# Further decisions on selection of the population
 
-*italics*The assumption that higher pension income indicates a higher socioeconomic status throughout life as indicator for life time contribution to social security will not hold for the disabled population where higher "income" is probably related to more severity of the disability. This will lead to the paradox that the highest paid individuals in this substantial sub-population have the highest chances to die first
+## Left Truncation
+This is not problematic but to mention it, the data is left-truncated. Starting the observation at 65 introduces a survivor bias. The choice to that can however be justified by a) our interest in the retired population and b) that we do not have income information for earlier ages (only for widows and disabled individuals).
 
-### Left Truncation
-I do not know if that is a problematic issue, but our data is left-truncated. Starting the observation at 65 introduces a survivor bias. The choice to that can however be justified by a) our interest in the retired population and b) that we do not have income information for earlier ages (only for widows and disabled individuals).
+## Time Lag
+The time lag between two observations might be a problem for the census based variables which are additionally used to measure the sociology-economic position of individuals. This would include the ownership of cars and housing. Given the age of the observed individuals, it is in my opinion unlikely that there were large-scale changes with regard to these variables, however, a ten year time lag in a period of economic fluctuations can add some bias i.e. there might be individuals who owned a car in 2001 cannot drive anymore in 2011 or could not replace it. It will also be a strong assumption, as you have mentioned before, to say that there were no residential changes at older ages which could affect the house ownership status. As these are indirect measures for wealth, I assume (and this is written in the paper right now) that the distributions have not changed that much over for the population of interest.
 
-### Time Lag
-The time lag between observations might be a problem for the census based variables which are additionally used to measure the sociology-economic position of individuals. This would include the ownership of cars and housing. Given the age of the observed individuals it is in my opinion unlikely that there were large-scale changes with regard to these variables, however, a ten year time lag in a period of economic fluctuations can add some bias i.e. there might be individuals who owned a car in 2001 cannot drive anymore in 2011 or could not replace it. It will also be a strong assumption, as you have mentioned before, to say that there were no residential changes at older ages which could affect the house ownership status. As these are indirect measures for wealth, I assume (and this is written in the paper right now) that the distributions have not changed that much over for the population of interest.
+## Disability
+The difficulties to distinguish the disabled early retirees from the "normal" retirees gives me the most headaches. The way the data (and the law) is structured, it is to my knowledge impossible to disentangle what part of the retirement pension of a former disabled after age 65 is based on his/her contribution to social security and what part is because of his/her disability.
+The solution for now is to include only individuals age 65 and older (including probably severely disabled) and control if they have received a disability pension before their 65-th birthday. This leads to the following problem:
 
-## Sample for the partner analysis
-The second sample which is used to analyze the effect of approximated household pension income is with `r nrow(pen.coupl)` individuals substantially smaller than the first one but has some interesting properties. The selection criteria are the same as for the individual pension level data set plus that we select married individuals which have been married in 2001 and still cohabit in 2011. Thus, we might lose a large number of cases but we also create a population that is relatively homogeneous and we can add explanatory power with the partners level of education among others. Given that household pension income does seem to represent overall income much better (especially for women in our case), I am tempted to explicitly focus on analyzing this sub-sample. That would however include a number of changes in the paper.
+*italics*The assumption that higher pension income indicates a higher socioeconomic status throughout life as indicator for life time contribution to social security will not hold for the disabled population where higher "income" is probably related to more severity of the disability. This will lead to the paradox that the highest paid individuals in this substantial sub-population have the highest chances to die first.
 
-# Part 2 - Analysis survival disparities of Andalusian retirees based on individual pension income
+Fran suggested to run a stratified model (disabled/not disabled) which would be one possibility to account for the issue. In this case we might have to be careful in how we explain the decision to treat all disabled individuals as different group. Another possibility is to use a frailty model. As we have theoretically no idea about the severness of the disability, we could use a random effect to account for this unobserved heterogeneity. **I think that this is a major road block and I would like to discuss again how to deal with it the best way**.
 
-## Male/Female survival differences
-As we have already seen in the paper presented at EPC, Andalusian women have a survival advantage over men in the generations covered by the BDLPA. Their survival curve is more "rectangular" and there is much less variation in the ages at death. The different life span disparity might be one piece of explanation for the 
-```{r life span disparity, echo=FALSE, warning=FALSE}
+## Male/Female survival and income differences
+As we know from the paper presented at EPC 2016, Andalusian women have a survival advantage over men, at least in the generations covered by the BDLPA. This results in more "rectangular" survival curve (here for the full population) and less variation in the ages at death. These differences in LE and life span disparity are probably part of the explanation for the results we get for the individual level relationship between income and survival. There are less female deaths during the observation period and they also seem to be less spread.
 
+```{r KM survival plot, echo=FALSE, warning=FALSE}
+  # male population
+  km2.a1 <- survfit(coxph(Surv(time=entry.age.r,
+                               time2=exit.age,
+                               event=event)~1, data=subset(retire,SEXO=="male")), 
+                    data=subset(retire,SEXO=="male"), type="kaplan-meier")
+  
+  # female population
+  km2.b1 <- survfit(coxph(Surv(time=entry.age.r,
+                               time2=exit.age,
+                               event=event)~1, data=subset(retire,SEXO=="female")), 
+                    data=subset(retire,SEXO=="female"), conf.type = "log-log")
 
+  
+  km2.p <- tidy(km2.a1) %>% dplyr::select(estimate,time) %>% mutate(sex="male") 
+  km2.pb <- tidy(km2.b1)  %>% dplyr::select(estimate,time) %>% mutate(sex="female")
+  
+    km2.p <- dplyr::union(km2.p, km2.pb) %>% 
+    ggplot() +
+    geom_step(mapping = aes(x=time, y=estimate, color=sex))         +
+    scale_y_continuous(name = "Survival Probability")                  +
+    scale_x_continuous(name = "Age")                                   +
+    scale_colour_manual(values = c("orange", "darkgrey"), name="")     +
+    theme_minimal()
+    km2.p
+rm(km2.p,km2.a1, km2.b1, km2.pb)
 ```
 
-## The impact of disability
+We also know that there are substantial differences in the labor force participation, average salaries and therefore contribution to social security between men and women. The driving force behind our findings on female survival, in my opinion, lies in the distributions of incomes and how the variable enters the model. Even if we select only women who have payed into social security, there incomes are skewed to the lower end of the income distribution and more compressed than mens incomes. The plots show the relative income distribution for both sexes, the first plot just for retirement pensions, the second also including disability allowance.
 
-## The distribution of income by sex
-
-
-```{r income distribution, echo=FALSE, warning=FALSE}
-  retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",651.85,974.16)) %>% 
+```{r income plot, echo=FALSE, warning=FALSE}
+  # 1  female 479.6380
+  # 2    male 765.6855
+  
+ INC.REN <- retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",479.64,765.69)) %>% 
+    ggplot(aes(x=income_Retirement, color=SEXO)) +
+    geom_histogram(aes(y=50*..density..), fill="white", alpha=0.5, position="dodge",binwidth = 50) +
+    geom_vline(aes(xintercept=grp.mean, color=SEXO),
+               linetype="dashed") +
+    scale_color_manual(values=c("#000000", "#A9A9A9"), name=" ") +
+    scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(1,3500)) +
+    scale_y_continuous(name = " ") +
+    theme_bw()
+ 
+ INC.REN <- INC.REN + theme(legend.position = c(0.85, 0.85))
+ INC.REN
+ 
+ INC.DIS <- retire %>% dplyr::mutate(grp.mean = ifelse(SEXO=="female",651.85,974.16)) %>% 
     ggplot(aes(x=INCOME, color=SEXO)) +
     geom_histogram(aes(y=50*..density..),fill="white", alpha=0.5, position="dodge",binwidth = 50) +
     geom_vline(aes(xintercept=grp.mean, color=SEXO),
                linetype="dashed") +
-    scale_color_brewer(palette="Dark2", name=" ") +
-    scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(0,3500)) +
+    scale_color_manual(values=c("#000000", "#A9A9A9"), name=" ") +
+    scale_x_continuous(name="Montly Public Pension Income in € (including disability)", limits = c(0,3500)) +
     scale_y_continuous(name = "Relative Frequency") +
     theme_bw()
+ 
+ INC.DIS <- INC.DIS + theme(legend.position = c(0.85, 0.85))
+ INC.DIS
 ```
 
+# Part 2 - Model and variable choices
+So far we were using Cox models to estimate the survival differences between different income groups and other variables. The comments from the LONGPOP master class made me think if it might be more accurate to use a parametric survival model with a Gompertz baseline distribution. It was repeatedly shown that human adult mortality follows a Gompertz distribution and we would not need to make assumptions about proportional hazards or else. I ran a few tests and found that indeed fit the data better than the Cox model. It would not be an extensive amount of work to change it. Indeed it would not be more than an afternoon of work. I just show a few results for males comparing models with a categorical income variable, the same income variable we have used so far. 
+```{r comparing cox to parametric, echo=FALSE, warning=FALSE}
+#### Comparing the Cox with the Gompertz (3 cats as last in the paper)
+cox.male.1 <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ pensize.3,data=subset(retire, SEXO=="male"))
 
-# Part 3 - Descriptive analysis survival disparities of Andalusian retirees based on shared household pension income (Couple Data)
+        ### ----------------------------------------------------------
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+        ph.test <- cox.zph(cox.male.1)
+        
+        plot(ph.test[1], main = "pensize")
+
+# 1 b) men (individual, only income (cat.), Gomp)
+Gomp.male.1 <- flexsurvreg(Surv(time=entry.age.r,
+                                 time2=exit.age,
+                                 event=event) ~ pensize.3, data = subset(retire, SEXO="male"),
+                            dist = "gompertz")
+
+## Simple AIC
+AIC <- matrix(ncol = 2, nrow = 2)
+AIC[1,2] <- AIC(cox.male.1)
+AIC[2,2] <- AIC(Gomp.male.1)
+
+
+Dist <- c("Cox", "Gompertz")
+colnames(AIC) <- c("Distribution", "AIC")
+AIC <- transform(AIC, Distribution = as.character(Dist), 
+                 AIC = as.factor(AIC))
+#### clean up AIC
+AIC$AIC <- as.numeric(levels(AIC$AIC)[AIC$AIC])
+AIC[order(AIC$AIC),]
+
+```
+
+```{r cox vs parametric, echo=FALSE, warning=FALSE}
+# comparing the models visually
+inc_df <- with(retire,
+               data.frame(pensize.3 = c("less than 600 Euro", "600-1199 Euro", "more than 1200 Euro")))
+
+pred.cox.g <- survfit(cox.male.1, newdata = inc_df)
+
+pred.cox.g <- tidy(pred.cox.g) 
+
+## Go a little around to get the three categories
+pred.cox.g1 <- pred.cox.g %>% dplyr::select(estimate.1, conf.high.1, conf.low.1, time) %>% mutate(estimate=estimate.1) %>% 
+                mutate(income="less than 600 Euro") %>% mutate(conf.high=conf.high.1) %>% mutate(conf.low=conf.low.1) %>% 
+                mutate(model="Cox") %>% dplyr::select(-estimate.1,-conf.high.1,-conf.low.1)
+pred.cox.g2 <- pred.cox.g %>% dplyr::select(estimate.2, conf.high.2, conf.low.2, time) %>% mutate(estimate=estimate.2) %>% mutate(conf.high=conf.high.2) %>% 
+                mutate(conf.low=conf.low.2) %>% mutate(income="600-1199 Euro") %>% mutate(model="Cox") %>% 
+               dplyr::select(-estimate.2,-conf.high.2,-conf.low.2)
+pred.cox.g3 <- pred.cox.g %>% dplyr::select(estimate.3, conf.high.3, conf.low.3, time) %>% mutate(estimate=estimate.3) %>% mutate(conf.high=conf.high.3) %>% 
+               mutate(conf.low=conf.low.3) %>% mutate(income="more than 1200 Euro") %>% mutate(model="Cox") %>% 
+               dplyr::select(-estimate.3,-conf.high.3,-conf.low.3)
+
+pred.cox.g <- union(pred.cox.g1,pred.cox.g2) %>% union(pred.cox.g3)
+
+
+
+# extracting information from gompertz model
+# ------------------------------------------
+est.Gomp.1 <- data.frame(summary(Gomp.male.1))
+  
+# group < 600
+est.Gomp.g1 <- est.Gomp.1 %>% dplyr::select(pensize.3.less.than.600.Euro.est, pensize.3.less.than.600.Euro.lcl, 
+                                            pensize.3.less.than.600.Euro.ucl, pensize.3.less.than.600.Euro.time) %>%    
+                                mutate(estimate=pensize.3.less.than.600.Euro.est) %>% 
+                                mutate(income="less than 600 Euro") %>% 
+                                mutate(conf.high=pensize.3.less.than.600.Euro.ucl) %>% 
+                                mutate(conf.low=pensize.3.less.than.600.Euro.lcl) %>% 
+                                mutate(time=pensize.3.less.than.600.Euro.time) %>% 
+                                mutate(model="Gompertz") %>% 
+                                dplyr::select(-pensize.3.less.than.600.Euro.est,-pensize.3.less.than.600.Euro.lcl,
+                                             -pensize.3.less.than.600.Euro.ucl,-pensize.3.less.than.600.Euro.time)
+  
+
+# group 600-1200
+est.Gomp.g2 <- est.Gomp.1 %>% dplyr::select(pensize.3.600.1199.Euro.est, pensize.3.600.1199.Euro.lcl, 
+                                            pensize.3.600.1199.Euro.ucl, pensize.3.600.1199.Euro.time) %>%    
+  mutate(estimate=pensize.3.600.1199.Euro.est) %>% 
+  mutate(income="600-1199 Euro") %>% 
+  mutate(conf.high=pensize.3.600.1199.Euro.ucl) %>% 
+  mutate(conf.low=pensize.3.600.1199.Euro.lcl) %>% 
+  mutate(time=pensize.3.600.1199.Euro.time) %>% 
+  mutate(model="Gompertz") %>% 
+  dplyr::select(-pensize.3.600.1199.Euro.est,-pensize.3.600.1199.Euro.lcl,
+                -pensize.3.600.1199.Euro.ucl,-pensize.3.600.1199.Euro.time)
+
+# group > 1200
+est.Gomp.g3 <- est.Gomp.1 %>% dplyr::select(pensize.3.more.than.1200.Euro.est, pensize.3.more.than.1200.Euro.lcl, 
+                                            pensize.3.more.than.1200.Euro.ucl, pensize.3.more.than.1200.Euro.time) %>%    
+  mutate(estimate=pensize.3.more.than.1200.Euro.est) %>% 
+  mutate(income="more than 1200 Euro") %>% 
+  mutate(conf.high=pensize.3.more.than.1200.Euro.ucl) %>% 
+  mutate(conf.low=pensize.3.more.than.1200.Euro.lcl) %>% 
+  mutate(time=pensize.3.more.than.1200.Euro.time) %>% 
+  mutate(model="Gompertz") %>% 
+  dplyr::select(-pensize.3.more.than.1200.Euro.est,-pensize.3.more.than.1200.Euro.lcl,
+                -pensize.3.more.than.1200.Euro.ucl,-pensize.3.more.than.1200.Euro.time)
+
+
+
+# combine the models
+comp.plot <- dplyr::union(pred.cox.g,est.Gomp.g1) %>% union(est.Gomp.g2) %>% union(est.Gomp.g3) 
+
+# plot fit
+# --------
+comp.plot %>% ggplot() +
+  geom_step(mapping = aes(x=time, y=estimate, color=model, linetype=income), size = 1.15)         +
+  scale_y_continuous(name = "Survival Probability")                  +
+  scale_x_continuous(name = "Age")                                   +
+  scale_colour_manual(values = c("orange","chartreuse"), name="")    +
+  scale_linetype_manual(values=c("longdash", "dotted", "solid"), name="")+
+  theme_minimal()
+
+```
+I ran a few tests with other parametric distributions which confirmed that the Gompertz curve fits the data best (for more model comparison see code file: 032_ModelTests.R).
+```{r survival models,echo=FALSE, warning=FALSE}
+AIC <- matrix(ncol = 2, nrow = 3)
+
+# exponential
+model.1 <- flexsurvreg(Surv(time=retire$entry.age.r,
+                          time2=retire$exit.age,
+                          event=retire$event) ~ 1, dist = "exp")
+
+AIC[1,2] <- AIC(model.1)
+
+
+# lognormal
+model.2 <- flexsurvreg(Surv(time=retire$entry.age.r,
+                            time2=retire$exit.age,
+                            event=retire$event) ~ 1, dist = "lnorm")
+
+AIC[2,2] <- AIC(model.2)
+
+
+
+# Gompertz
+model.3 <- flexsurvreg(Surv(time=retire$entry.age.r,
+                            time2=retire$exit.age,
+                            event=retire$event) ~ 1, dist = "gompertz")
+
+AIC[3,2] <- AIC(model.3)
+
+Dist <- c("exp", "lnorm", "gompertz")
+colnames(AIC) <- c("Distribution", "AIC")
+AIC <- transform(AIC, Distribution = as.character(Dist), 
+                 AIC = as.factor(AIC))
+#### clean up AIC
+AIC$AIC <- as.numeric(levels(AIC$AIC)[AIC$AIC])
+AIC[order(AIC$AIC),]
+
+# # plot the fit of the Gompertz model compared to the KME
+
+plot(model.3, ylab="Survival probability", 
+     xlab="Time", main = "Gompertz Survival Plot", xlim=c(65,100))
+legend("topright",legend=c("KM Plot","Fitted"), 
+       lty=c(1,1),col=c("black","red"), cex=0.75)
+``` 
+
+## Measuring income
+Another change I would like to propose is the way pension income is measured. Until now, we use a categorical income variable based on a mix of pension and disability income after age 65 (which mentioned earlier cannot be really told apart). We tried to different categorical variables and for both the highest income is relatively small and spread (values in percent, 0-1 corresponds to the proportions who experienced the event).
+```{r income, echo=FALSE,warning=FALSE}
+cbind(round(prop.table(table(retire$pensize,retire$event)),3)*100)
+cbind(round(prop.table(table(retire$pensize.3,retire$event)),3)*100)
+```
+Inspired by George Alters works on the Pensilvanian train company, I played around with a few different income measures. It turned out that using the log-pension income instead of the categories improves the fit of the models substantially. This choice, apparently often used in economics (see for instance the discussion [here](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1468-0084.2008.00531.x)) comes with at least two further advantages. The higher the pension income the less will add an additional Euro a month, so there will not be so much weight on the few individuals with higher incomes. Secondly, we avoid grouping individuals by arbitrary thresholds. We can discuss the interpretation, but first statistical test also confirm the improvement in fit (here with the full Cox model for the individual analysis).
+
+```{r incomemeasures, echo=FALSE,warning=FALSE}
+
+## Males (4 cats)
+cox.male.fa <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
+                          FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="male"))
+## Males (3 cats)
+cox.male.fb <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="male"))
+## Males (continuous)
+cox.male.fc <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ INCOME + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="male"))
+## Males (log)
+cox.male.fd <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ log(INCOME) + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="male"))
+
+anova(cox.male.fa, cox.male.fb) # LR Chisquare 44.686  (df=1) *** (model fb with 3 categories)
+anova(cox.male.fb, cox.male.fc) # LR Chisquare 83.117  (df=1) *** (model fc with continuous income)
+anova(cox.male.fc, cox.male.fd) # LR Chisquare 0.7254  (df=0) *** (model fd with log income)
+
+## Females (4 cats)
+cox.female.fa <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="female"))
+## Females (3 cats)
+cox.female.fb <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="female"))
+## Females (continuous)
+cox.female.fc <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ INCOME + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="female"))
+## Females (log)
+cox.female.fd <- coxph(Surv(time=entry.age.r,
+                          time2=exit.age,
+                          event=event) ~ log(INCOME) + ESREAL5 + mobil + HousReg + 
+                       FNAC + DIS + civil.status + hh,
+                     data=subset(retire, SEXO=="female"))
+
+anova(cox.female.fa, cox.female.fb) # LR Chisquare 40.024 (df=1) *** (model fb with 3 categories)
+anova(cox.female.fb, cox.female.fc) # LR Chisquare 38.817  (df=1) *** (model fc with continuous income)
+anova(cox.female.fc, cox.female.fd) # LR Chisquare 11.99  (df=0) *** (model fd with log income) !!!
+summary(cox.male.fd)
+summary(cox.female.fd)
+```
+
+These are just the results for the Log-likelihood ratio test for one model (Cox model with all covariates), but so far it can be confirmed that applying the logarithm of the income leads to a better model fit. I would be happy to discuss that!
+Although the fit is improved, the results are still not as expected (at least not by the theory). For both sub-populations there seem to be a negative effect of income on survival once all covariates are included.
+## Number of children in the household instead of household size
+This is just a suggestion to change this covariate in the full model or make a mix between the variables because it will help me to explain the situation a little bit better.
+
+# Part 3 - The final model how I would use it
+This is just to show how I would imagine the final model we present in the paper for now. It just touches on the partner data and therefore has a few more variables than the individual table and substantially less individuals. I have to admit that the search for the right model might not be over but in my opinion, we are getting closer. What do you think?
+```{r partner, echo=FALSE, warning=FALSE}
+
+GOMP <- flexsurvreg(Surv(time=entry.age.r,
+                              time2=exit.age,
+                              event=event) ~ log(hhincome) + SEXO + ESREAL5 + mobil + HousReg +  p.surv + DIS +
+                              log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl,
+                         dist = "gompertz")
+GOMP
+```

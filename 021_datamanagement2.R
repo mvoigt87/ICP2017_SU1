@@ -346,6 +346,18 @@ round(prop.table(table(retire$mobil)),digits = 2)
 retire <- retire %>% mutate(hh= factor(ifelse(NMIEM==2, "with partner only","larger household")))
 retire <- within(retire, hh <- relevel(hh, ref = "larger household"))
 
+# Number of children in the household
+
+table(retire$CONPARHIJ)
+
+retire <- retire %>% mutate(hijo = as.character(CONPARHIJ))
+retire$hijo <- revalue(retire$hijo, c("1"="Single (with children)", "2"="Lives with Partner", "3"="Single (with children)", 
+                                 "4"="Single (with children)", "5"="Partner and children", "6"="Partner and children",
+                                 "7"="Partner and children", "8"="Partner and children"))
+
+
+round(prop.table(table(retire$hijo)),digits = 3)
+
 
 ###### 3. Small checks and saving
 

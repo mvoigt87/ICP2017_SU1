@@ -112,7 +112,8 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
 ### 1.4 Partner death = widowhood between 2011 and 2015 
  
  # - simply when the partner dies before the individual under observation (time varying for later)
- pen.coupl <- pen.coupl %>% mutate(partner.death = ifelse(event_p==1 & data.out > data.out_p,1,0)) %>% 
+ pen.coupl <- pen.coupl %>% mutate(partner.death = ifelse(event_p==1,1,0)) %>%
+   dplyr::mutate(partner.death = ifelse(data.out > data.out_p, partner.death, 0)) %>% 
    ## Make a factor out of it
    mutate(p.surv = factor(ifelse(partner.death==1,"widowed","partner alive"))) %>% 
    # 1.4.2 Calculate Household income
@@ -153,6 +154,7 @@ pen.coupl <- pen.coupl %>% inner_join(r.test.a, by="kIDcon")
      scale_x_continuous(name="Montly Public Pension Income (in €)", limits = c(1,4000)) +
      scale_y_continuous(name = " ") +
      theme_bw()
+   ### Very similar income distribution for men and women
 
 ## 1.4.4 Distribution invites to look at 3 groups (less than 1000, 1000-1500, and more than that)
  
@@ -178,8 +180,6 @@ round(prop.table(table(pen.coupl$bw, pen.coupl$SEXO),2), digits=2)
 # --- For men this effect could be interesting
 
 
-
-
 ## 1.5 Age difference of the partners
 
 pen.coupl <- pen.coupl %>% mutate(age.diff=age2011-age2011_p) %>% 
@@ -199,6 +199,11 @@ pen.coupl %>% ggplot(aes(x=age.diff, fill=SEXO)) +
   geom_histogram(bins=50)+
   scale_fill_discrete(name = "")+
   theme_minimal()
+
+## 1.6 Children in household (CONPARHIJ)
+
+# Pre-created children variable
+round(prop.table(table(pen.coupl$hijo)),3)
 
 
 ##### ------------------------------------ 
@@ -363,6 +368,51 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  # There are only a few cases at the highest ages (assumption: people who entered in their late 90s 
  # (age at 2011) were mostly living without partner at the time of their entry - so we do not follow up so many of them)
  # ----------------------------- 
+ 
+ 
+ ### 4.1.2 KME by p.surv
+
+# male
+ # partner alive
+ KM.S1 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,p.surv=="partner alive" & SEXO=="male")), type = "kaplan-meier")
+ # widowd
+ KM.S2 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,p.surv=="widowed" & SEXO=="male")), type = "kaplan-meier")
+ 
+# females
+ 
+ # alive
+ KM.S3 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,p.surv=="partner alive" & SEXO=="female")), type = "kaplan-meier")
+ 
+ # widowed
+ KM.S4 <- survfit(coxph(Surv(time = entry.age.r,
+                             time2 = exit.age,
+                             event = event)~1, data = subset(pen.coupl,p.surv=="widowed" & SEXO=="female")), type = "kaplan-meier")
+ 
+ 
+ km.alive.m <- tidy(KM.S1) %>% dplyr::select(time,estimate) %>% mutate(partner="partner alive") %>% mutate(sex="male")
+ km.widowed.m <- tidy(KM.S2) %>% dplyr::select(time,estimate) %>% mutate(partner="widowed") %>% mutate(sex="male")
+ km.alive.f <- tidy(KM.S3) %>% dplyr::select(time,estimate) %>% mutate(partner="partner alive") %>% mutate(sex="female")
+ km.widowed.f <- tidy(KM.S4) %>% dplyr::select(time,estimate) %>% mutate(partner="widowed") %>% mutate(sex="female")
+ 
+ km.part <- union(km.alive.m,km.widowed.m) %>% union(km.alive.f) %>% union(km.widowed.f) 
+ 
+ km.part %>% ggplot(aes(x=time, y=estimate, color=partner)) +
+   geom_step() +
+   scale_y_continuous(name = "Survival Probability")                  +
+   scale_x_continuous(name = "Age")                                   +
+   scale_color_manual(values = c("orange", "darkgrey"), name="")      +
+   facet_grid(. ~ sex)                                                +
+   theme_minimal()
+ 
+ ### Something really weird happens here! How is that possible?
+ 
+ 
  
  ############################################## 
  ### KME - by sex and income (3 categories) ###
@@ -683,7 +733,7 @@ pen.coupl <- pen.coupl %>% mutate(exit = factor(ifelse(event==0,"censored","dead
  pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
  
  # Edit partnerdeath variable
- pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "partner alive")) 
+ pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "widowed")) 
  
  # Household ownership variable
  pen.coupl$HousReg <- as.factor(pen.coupl$HousReg)
