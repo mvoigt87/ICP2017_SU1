@@ -144,7 +144,7 @@ GOMP.log <- flexsurvreg(Surv(time=entry.age.r,
                               log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl,
                          dist = "gompertz")
 
-GOMP.log
+GOMP.log ## Other than in the model test code, this model seems to be superior (although they look the same)
 
 
 GOMP.3cat <- flexsurvreg(Surv(time=entry.age.r,

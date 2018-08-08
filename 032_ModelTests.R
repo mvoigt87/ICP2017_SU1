@@ -65,6 +65,9 @@ pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income"))
 # Edit partnerdeath variable
 pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "widowed")) 
 
+#  variable hijo (only partner)
+pen.coupl <- within(pen.coupl, hijo <- relevel(as.factor(hijo), ref = "Only Partner")) 
+
 # Household ownership variable
 pen.coupl$HousReg <- as.factor(pen.coupl$HousReg)
 pen.coupl <- within(pen.coupl, HousReg <- relevel(HousReg, ref = "owned")) 
@@ -917,10 +920,10 @@ AIC[order(AIC$AIC),]                                        ## 3 categories! see
 
 # survival curve - 3 cats
 par(mfrow=c(1,2))
-plot(GOMP.c3, xlim=c(65,100))
+plot(GOMP.c3, xlim=c(65,100), main="3 categories")
 legend("topright",legend=c("KME","Gompertz Curve"), 
        lty=c(1,1),col=c("black","red"), cex=0.75)
-plot(GOMP.log, xlim=c(65,100))
+plot(GOMP.log, xlim=c(65,100), main="log income")
 legend("topright",legend=c("KME","Gompertz Curve"), 
        lty=c(1,1),col=c("black","red"), cex=0.75)
 par(mfrow=c(1,1))
