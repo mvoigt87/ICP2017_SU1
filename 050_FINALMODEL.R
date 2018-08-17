@@ -178,16 +178,24 @@ haz.Gompertz <- function(x, shape, rate) {
 
 x <- seq(65,100,0.01)             ## to make it the same time scale
 # parameters
-shape.m <- GOMP$coefficients[1]
-rate.m <- 0.193                   ## something went wrong with the rate (always negative)
+shape.m <- GOMP.log$coefficients[1]
+rate.m <- 0.00485                   ## something went wrong with the rate (always negative)
 
 
 haz.Gomp <- as.vector(haz.Gompertz(x=x, shape = shape.m, rate = rate.m))
+
+plot(x=x,y=log(haz.Gomp), type="l")  
   
-  
+
+
+
 #######################################################################################################################
 #######################################################################################################################
 #######################################################################################################################
+
+
+
+
 ## --------------------------
 ## Model X - with retire data
 ## --------------------------
@@ -225,3 +233,29 @@ legend("topright",legend=c("KME","Gompertz Curve"),
 par(mfrow=c(1,1))
 
 #######################################################################################################################  
+
+###### 4 Output tables
+
+
+## 4.1. Separate Models - Males (3 Cat)
+
+
+stargazer(cox.male.3a,cox.male.3b,cox.male.3c, title="Cox PH Model",no.space=F,
+          ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+          covariate.labels=c("$>$ 1200 Euro/month","$<$ 600 Euro/month",
+                             "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
+                             "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
+                             "Single","Widowed","2 Person Household"),
+          single.row=FALSE, apply.coef = exp)
+# 
+# 
+# 
+# ## 4.1. Separate Models - Females (3 Cat)
+
+stargazer(cox.female.3a,cox.female.3b, cox.female.3c, title="Cox PH Model",no.space=F,
+          ci=TRUE, ci.level=0.95, omit.stat=c("max.rsq"),dep.var.labels=c("Relative mortality risk"),
+          covariate.labels=c("$>$ 1200 Euro/month","$<$ 600 Euro/month",
+                             "Tertiary Ed.","Secondary Ed.","Primary Ed.", "No car avail.",
+                             "Does not own house/apt","Birth year (cohort)", "Received Disability Pension",
+                             "Single","Widowed","2 Person Household"),
+          single.row=FALSE, apply.coef = exp)

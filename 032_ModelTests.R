@@ -1,14 +1,24 @@
 #### ------------------------------------------------------- ####
 ####         Model comparison and got testing                ####               
 #### ------------------------------------------------------- ####
+### 1  Testing different covariate combination and stratifications
+
+### 2  Testing different income variables
+
+### 3  Testing survival models
+
+### 4  Find the best-fitting model
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+rm(list = ls())
 
 ### 0.1. Loading data set
-load("031_RETIND.RData")
-load("041_RETPART.RData")
+# load("031_RETIND.RData")
+# load("041_RETPART.RData")
+load("031b_RETIND.RData")
 
 # ----------------------------- 
-# 637345 individuals
-# -----------------------------
 
 ### 0.2 load necessary package
 library(reshape)
@@ -23,28 +33,30 @@ library(stargazer)
 library(flexsurv)
 # for the cool plots
 library(survminer)
+# for checking for different distributions
+library(fitdistrplus)
 
-##### 1. Individual level survival regression analysis
-
+##### Individual level survival regression analysis
 
 ## change the reference for some categorical variables
-retire$HousReg <- as.factor(as.character(retire$HousReg))
-retire <- within(retire, HousReg <- relevel(HousReg, ref = "owned"))
-retire <- within(retire, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
-# retire <- within(retire, pensize <- relevel(pensize, ref = "650-999 Euro"))
-# retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
-retire <- within(retire, pensize.3 <- relevel(pensize.3, ref = "600-1199 Euro"))
+retire.A$HousReg <- as.factor(as.character(retire.A$HousReg))
+retire.A <- within(retire.A, HousReg <- relevel(HousReg, ref = "owned"))
+retire.A <- within(retire.A, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
+# retire.A <- within(retire.A, pensize <- relevel(pensize, ref = "650-999 Euro"))
+# retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
+retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "600-1199 Euro"))
+retire.A <- within(retire.A, hh <- relevel(as.factor(hh), ref = "single"))
+
+                                ## --------- ##
                                 ## Household ##
+                                ## --------- ##
+
 pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "more than 1500 Euro"))
-
 # pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "less than 1000 Euro"))
-
 
 # 4 income groups
 pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "more than 2000 Euro"))
-
 # pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "less than 1000 Euro"))
-
 # pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "1000-1500 Euro"))
 
 # education variable
@@ -76,28 +88,113 @@ pen.coupl <- within(pen.coupl, HousReg <- relevel(HousReg, ref = "owned"))
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 
+## 1.2. Covariate Cocktail
+## -----------------------
+
+
+# Model with only income
+cox.a <- coxph(Surv(time=entry.age,
+                         time2=exit.age,
+                         event= event)~ pensize + strata(SEXO),
+                    data=retire.A)
+
+
+# Adding the other wealth variables
+cox.b <- coxph(Surv(time=entry.age,
+                         time2=exit.age,
+                         event=event) ~ pensize + ESREAL5 + mobil + HousReg + strata(SEXO),
+                    data=retire.A)
+
+# Adding contextual variables
+cox.c <- coxph(Surv(time=entry.age,
+                         time2=exit.age,
+                         event=event) ~ pensize + ESREAL5 + mobil + HousReg +  #DIS + 
+                                        FNAC + civil.status + hh + strata(SEXO),
+                    data=retire.A)
+# model comparison
+anova(cox.a, cox.b)   ## LR CHisq (df=5) = 931.47 ***
+anova(cox.b, cox.c)   ## LR CHisq (df=6) = 316.37 ***
+
+rm(cox.a, cox.b, cox.c)
+
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## 1.3 Stratified Cox Model
+# As alternative to the separate models we apply a stratified model which allows to account for the different
+# baseline mortality of the two sexes - for the sake of visibility the other model is prefered
+
+cox.strat.1 <- coxph(Surv(time=entry.age,
+                          time2=exit.age,
+                          event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + # DIS + 
+                          FNAC + civil.status + hh + strata(SEXO)
+                     , data=retire.A)
+summary(cox.strat.1)
+# cox.zph(cox.strat.1)
+
+## 1.4 Model including interaction effects
+ret.interaction.sex <- coxph(formula = Surv(time=entry.age,
+                                            time2=exit.age,
+                                            event=event) ~ (pensize.3 + ESREAL5 + mobil + HousReg + # DIS + 
+                                                              FNAC + civil.status + hh)*SEXO - SEXO + strata(SEXO),
+                             data    = retire.A,
+                             ties    = c("efron","breslow","exact")[1])
+ret.interaction.sex
+
+### Compare the stratified model to the interaction model - (ANOvA)
+anova(ret.interaction.sex, cox.strat.1)
+###           loglik   Chisq Df P(>|Chi|)    
+### Model1  -1470072                           
+### Model2  -1470159  130.88 11 < 2.2e-16 ***
+### This model is not statistically significantly different from the no interaction model at the 0.05 level, 
+### thus, we conclude that the model without interaction is adequate.
+
+## !!! The stratified model it is !!! - to better show the differences two separate models were chosen
+
+## 3.2.3 Separate models for females and males 
+## (Code based on Kleinbaum: http://rstudio-pubs-static.s3.amazonaws.com/5096_0880aaaf0df94f3b8533a1c024738246.html)
+# 
+# ret.separate <- lapply(split(retire, retire$SEXO),
+#                        FUN = function(DF) {
+#                          coxph(Surv(time=entry.age.r,
+#                                     time2=exit.age,
+#                                     event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
+#                                  FNAC + DIS + civil.status + hh, retire)
+#                        })
+# ret.separate
+
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 
                     ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
                     ### COX MODEL with different income measures ###
                     ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
 
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+
+
 ## male population
 ## ---------------
 
-# Model with only income
-cox.male.a <- coxph(Surv(time=entry.age.r,
+# Model with 4 categories
+cox.male.a.a <- coxph(Surv(time=entry.age,
                          time2=exit.age,
                          event=event) ~ pensize,
-                    data=subset(retire, SEXO=="male"))
+                    data=subset(retire.A, SEXO=="male"))
+
+# Model with 3 categories
+cox.male.a.b <- coxph(Surv(time=entry.age.r,
+                         time2=exit.age,
+                         event=event) ~ pensize.3,
+                    data=subset(retire.A, SEXO=="male"))
 
 # Income as continuous measure
-cox.male.a.b <- coxph(Surv(time=entry.age.r,
+cox.male.a.c <- coxph(Surv(time=entry.age.r,
                            time2=exit.age,
                            event=event) ~ INCOME,
                       data=subset(retire, SEXO=="male"))
 
 # LOG Income as continuous measure
-cox.male.a.c <- coxph(Surv(time=entry.age.r,
+cox.male.a.d <- coxph(Surv(time=entry.age.r,
                            time2=exit.age,
                            event=event) ~ log(INCOME),
                       data=subset(retire, SEXO=="male"))
@@ -105,9 +202,10 @@ cox.male.a.c <- coxph(Surv(time=entry.age.r,
 
 # LR tests
 
-anova(cox.male.a, cox.male.a.b)   ## LR CHisq (df=2) = 96.6 ***
-anova(cox.male.a, cox.male.a.c)   ## LR CHisq (df=2) = 102.34 ***
-anova(cox.male.a.b, cox.male.a.c) ## LR CHisq (df=0) = 5.7209 ***  ### simple LR Test prefers this model!
+anova(cox.male.a.a, cox.male.a.b)   ## LR CHisq (df=2) = 96.6 ***
+anova(cox.male.a.a, cox.male.a.b)   ## LR CHisq (df=2) = 96.6 ***
+anova(cox.male.a.a, cox.male.a.c)   ## LR CHisq (df=2) = 102.34 ***
+anova(cox.male.a.b, cox.male.a.c)   ## LR CHisq (df=0) = 5.7209 ***  ### simple LR Test prefers this model!
 
 ### For discussion on income measures i.e.: https://onlinelibrary.wiley.com/doi/full/10.1111/j.1468-0084.2008.00531.x 
 
@@ -170,8 +268,8 @@ AIC$AIC <- as.numeric(levels(AIC$AIC)[AIC$AIC])
 AIC[order(AIC$AIC),]
 ## AIC seems to highlight the model with 4 categories
 
-
 ### Full model comparison
+### ---------------------
 
 ## Males (4 cats)
 cox.male.fa <- coxph(Surv(time=entry.age.r,
@@ -232,6 +330,45 @@ anova(cox.female.fa, cox.female.fb) # LR Chisquare 40.024 (df=1) *** (model fb w
 anova(cox.female.fb, cox.female.fc) # LR Chisquare 38.817  (df=1) *** (model fc with continuous income)
 anova(cox.female.fc, cox.female.fd) # LR Chisquare 11.99  (df=0) *** (model fd with log income) !!!
 
+
+
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+
+### Further model and assumption test
+
+mm <- cox.zph(cox.male.a)
+ff <- cox.zph(cox.female.b)
+
+# Proportional Hazards Assumption - pensionsize variables
+ggcoxzph(mm,resid=T, se=T, var=c(1:3), caption = "Schoenfeld Residuals by time",
+         ggtheme = theme_minimal(),font.main = 12)
+# assumption is only hardly met by the group who receives 1000-1999 Euro per month
+
+# Proportional Hazards Assumption - rest
+ggcoxzph(mm,resid=T, se=T, var=c(4:13), caption = "Schoenfeld Residuals by time",
+         ggtheme = theme_minimal(),font.main = 12) 
+# assumption is not met for the secondary and primary education group and the partner variable
+
+# residual check
+ggcoxdiagnostics(cox.male.a,type = "schoenfeld")
+
+##--- female population   
+# Proportional Hazards Assumption
+ggcoxzph(ff,resid=T, se=T, var = c(1:3), caption = "Schoenfeld Residuals by time",
+         ggtheme = theme_minimal(),font.main = 12)
+
+# PHA is not met in the analysis of pension size for women
+
+ggcoxzph(ff,resid=T, se=T, var = c(4:13), caption = "Schoenfeld Residuals by time",
+         ggtheme = theme_minimal(),font.main = 12)
+# PHA is met for secondary education, no car, and the civil statuses
+
+
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
+## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 
