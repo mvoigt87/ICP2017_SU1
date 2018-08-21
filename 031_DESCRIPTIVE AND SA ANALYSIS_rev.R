@@ -64,24 +64,27 @@ rm(list=ls())
 retire.A %>% ggplot(aes(x=exit.age,fill=as.factor(event)))+
    geom_histogram(bins=40)+
    scale_fill_discrete(name = "")
+ # birth cohort
+retire.A %>% ggplot(aes(x=FNAC,fill=as.factor(event)))+
+   geom_histogram(bins=40)+
+   scale_fill_discrete(name = "")
    # -----------------------------
    #clear concentration of deaths at the older ages - bump around the age 83
  
   # Sex differences in the age at death distribution
  
-sex.diff <- retire.A %>% dplyr::filter(event==1)
- 
-sex.diff %>% ggplot(aes(x=exit.age))+
+retire.A %>% dplyr::filter(event==1) %>% ggplot(aes(x=exit.age))+
     geom_histogram(aes(y=50*..density..),bins=40) +
     facet_grid(.~ SEXO) +
     theme_bw() 
     # relative distribution of ages at death show similar patterns but more noise (less cases, less deaths) for women
 
 ### ------------------------------------------------------------------------------------------------------------ ###  
+###### Event distribution by education, pension income and other variables of social position (statistical tests)
+### ------------------------------------------------------------------------------------------------------------ ###  
  
-### 1.2 Event distribution by education, pension income and other variables of social position (statistical tests)
  
-## Event by educational group
+## 1.2 Event by educational group
  
 round(prop.table(table(retire.A$event, retire.A$ESREAL5),2),digits = 2)
 chisq.test(table(retire.A$event, retire.A$ESREAL5))
@@ -90,7 +93,7 @@ chisq.test(table(retire.A$event, retire.A$ESREAL5))
   #   censored                        0.81%           0.89%            0.90%          0.86%
   #   dead                            0.19%           0.11%            0.10%          0.14%
   
-  ### These results indicate a social mortality gradient but need to be interpreted carefully as these percentages are
+  ### These results indicate a mortality gradient but need to be interpreted carefully as these percentages are
   ### not age or time-specific. Oldest individuals have lower share of higher educated individuals
 
   # bar plot of event distribution by education
@@ -98,12 +101,14 @@ retire.A %>% ggplot(aes(x=ESREAL5,fill=as.factor(event))) +
    geom_bar(stat = "count") +
    scale_fill_discrete(name = "") + theme_bw()
 
-  # graphic representation of the proportions of events and education groups
-  
-## 1.2.2 Event by pension income
+## b) Education - income relationship
+round(prop.table(table(retire.A$pensize, retire.A$ESREAL5),2),digits = 2)  ### strongly related and possibly interacting
 
-  # --------------------------------------- #
-  # Visual test - Graph Income distribution   - !RELATIVE FREQUENCY!
+
+## 1.3 Event by pension income
+# --------------------------- #
+
+# Visual test - Graph Income distribution   - !RELATIVE FREQUENCY!
 
 ### IN GREY tones - !!! ONLY RETIREMENT
 
@@ -167,14 +172,12 @@ INC.E.DIS <- retire.A %>% dplyr::mutate(event = as.character(ifelse(event==0, "a
   
 INC.E.DIS <- INC.E.DIS + theme(legend.position = c(0.85, 0.85))
   
-  # Well this is interesting as it almost completely overlaying
-  
-  # --------------------------------------- #
-  ## Table event distribution by income with 4 categories
-  
+
+# ----------------------------------------------------- #
+## Table event distribution by income with 4 categories
+# ----------------------------------------------------- #
+
 round(prop.table(table(retire.A$event, retire.A$pensize),2),digits = 2)
-#  chisq.test(table(retire.A$exit, retire.A$pensize))
-  
   # ----------------------------- 
   #             less than 650 Euro  650-999 Euro   1000-1999 Euro     more than 2000          # column percentage
   #   censored         0.84%            0.85%           0.86%               0.92%
@@ -182,11 +185,10 @@ round(prop.table(table(retire.A$event, retire.A$pensize),2),digits = 2)
   # ----------------------------- 
 
 #### %%%%%%%%%%%%%%%%%%%%%% ####
+
 ## Event by pension income by 3 categories
   
 round(prop.table(table(retire.A$event, retire.A$pensize.3),2),digits = 2)
-# chisq.test(table(retire.A$exit, retire.A$pensize.3))
-  
   # ----------------------------- 
   #              more than 1500 Euro  1000-1499 Euro   less than 600 Euro   # column percentage
   # censored                   0.88%           0.84%                0.84%
@@ -197,26 +199,15 @@ round(prop.table(table(retire.A$event, retire.A$pensize.3),2),digits = 2)
   
 #### %%%%%%%%%%%%%%%%%%%%%% #### 
   
-# average income in numbers for the descriptive tables
-  
-aggregate(retire.A$INCOME,by=list(retire.A$SEXO),FUN=mean)
-  
-  #            x
-  # 1  female  743.4845  Euro                                        ## new values
-  # 2    male 1052.9420  Euro
-
-
-  
-  
-## 1.2.4 Event by tenency status
+## 1.4 Event by housing ownership status
   
 round(prop.table(table(retire.A$event, retire.A$HousReg),2),digits = 2)
 chisq.test(table(retire.A$event, retire.A$HousReg))
   # ----------------------------- 
   #            Not owned   owned
-  # censored       0.83%   0.85%
-  # dead           0.17%   0.15%
-  # X-squared = 178.31, df = 1, p-value < 2.2e-16
+  # censored       0.83%   0.86%
+  # dead           0.17%   0.14%
+  # X-squared = 187.71, df = 1, p-value < 2.2e-16
   # -----------------------------   
 
 
@@ -280,8 +271,41 @@ chisq.test(table(retire.A$event[retire.A$SEXO=="female"], retire.A$pensize.3[ret
 ### For men the 3 categories seem to work better - for women not
 
 ##### ------------------------------------------------------------------------------------------------- ###   
-##### 3  Test for homogeneous populations (by sex, disability)  
+##### 3  Test for other homogeneous populations (by sex, disability)  
 ##### ------------------------------------------------------------------------------------------------- ###   
+
+# education
+ # men
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="No or Incomplete Educ." & retire.A$SEXO=="male"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="No or Incomplete Educ." & retire.A$SEXO=="male"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="Primary Educ." & retire.A$SEXO=="male"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="Primary Educ." & retire.A$SEXO=="male"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="Secondary or higher Educ." & retire.A$SEXO=="male"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="Secondary or higher Educ." & retire.A$SEXO=="male"]),2),digits = 2)
+
+ # women
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="No or Incomplete Educ." & retire.A$SEXO=="female"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="No or Incomplete Educ." & retire.A$SEXO=="female"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="Primary Educ." & retire.A$SEXO=="female"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="Primary Educ." & retire.A$SEXO=="female"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$ESREAL3=="Secondary or higher Educ." & retire.A$SEXO=="female"], 
+                       retire.A$pensize.3[retire.A$ESREAL3=="Secondary or higher Educ." & retire.A$SEXO=="female"]),2),digits = 2)
+
+
+# housing/car
+round(prop.table(table(retire.A$event[retire.A$HousReg=="owned"], retire.A$pensize.3[retire.A$HousReg=="owned"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$HousReg!="owned"], retire.A$pensize.3[retire.A$HousReg!="owned"]),2),digits = 2)
+
+
+round(prop.table(table(retire.A$event[retire.A$mobil=="car(s) available"], retire.A$pensize.3[retire.A$mobil=="car(s) available"]),2),digits = 2)
+
+round(prop.table(table(retire.A$event[retire.A$mobil=="no car available"], retire.A$pensize.3[retire.A$mobil=="no car available"]),2),digits = 2)
+## short summary: Big between group (own/ not own) differences but no indication for an interaction with pension
 
 
 ##### ------------------------------------------------------------------------------------------------- ###   

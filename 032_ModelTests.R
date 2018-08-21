@@ -41,49 +41,13 @@ library(fitdistrplus)
 ## change the reference for some categorical variables
 retire.A$HousReg <- as.factor(as.character(retire.A$HousReg))
 retire.A <- within(retire.A, HousReg <- relevel(HousReg, ref = "owned"))
+retire.A <- within(retire.A, ESREAL3 <- relevel(ESREAL3, ref = "Secondary or higher Educ."))
 retire.A <- within(retire.A, pensize <- relevel(pensize, ref = "more than 2000 Euro"))
 # retire.A <- within(retire.A, pensize <- relevel(pensize, ref = "650-999 Euro"))
-# retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
-retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "600-1199 Euro"))
+retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "more than 1200 Euro"))
+# retire.A <- within(retire.A, pensize.3 <- relevel(pensize.3, ref = "600-1199 Euro"))
 retire.A <- within(retire.A, hh <- relevel(as.factor(hh), ref = "single"))
-
-                                ## --------- ##
-                                ## Household ##
-                                ## --------- ##
-
-pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "more than 1500 Euro"))
-# pen.coupl <- within(pen.coupl, HHINC.3 <- relevel(HHINC.3, ref = "less than 1000 Euro"))
-
-# 4 income groups
-pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "more than 2000 Euro"))
-# pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "less than 1000 Euro"))
-# pen.coupl <- within(pen.coupl, HHINC.4 <- relevel(HHINC.4, ref = "1000-1500 Euro"))
-
-# education variable
-pen.coupl <- within(pen.coupl, ESREAL5 <- relevel(ESREAL5, ref = "Tertiary Educ.")) 
-
-# Partner education
-pen.coupl <- within(pen.coupl, ESREAL5_p <- relevel(ESREAL5_p, ref = "No or Incomplete Educ."))
-
-# education collapsed variable - 3 categories
-pen.coupl <- within(pen.coupl, ESREAL3 <- relevel(ESREAL3, ref = "Secondary or higher Educ."))
-
-# Same for the partner variable
-pen.coupl <- within(pen.coupl, ESREAL3_p <- relevel(ESREAL3_p, ref = "Secondary or higher Educ."))  
-
-# breadwinner variable
-pen.coupl <- within(pen.coupl, bw <- relevel(bw, ref = "less or equal income")) 
-
-# Edit partnerdeath variable
-pen.coupl <- within(pen.coupl, p.surv <- relevel(p.surv, ref = "widowed")) 
-
-#  variable hijo (only partner)
-pen.coupl <- within(pen.coupl, hijo <- relevel(as.factor(hijo), ref = "Only Partner")) 
-
-# Household ownership variable
-pen.coupl$HousReg <- as.factor(pen.coupl$HousReg)
-pen.coupl <- within(pen.coupl, HousReg <- relevel(HousReg, ref = "owned")) 
-
+retire.A <- within(retire.A, civil.status <- relevel(as.factor(civil.status), ref = "other forms"))
 
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
@@ -95,25 +59,25 @@ pen.coupl <- within(pen.coupl, HousReg <- relevel(HousReg, ref = "owned"))
 # Model with only income
 cox.a <- coxph(Surv(time=entry.age,
                          time2=exit.age,
-                         event= event)~ pensize + strata(SEXO),
+                         event= event)~ pensize.3 + strata(SEXO),
                     data=retire.A)
 
 
 # Adding the other wealth variables
 cox.b <- coxph(Surv(time=entry.age,
                          time2=exit.age,
-                         event=event) ~ pensize + ESREAL5 + mobil + HousReg + strata(SEXO),
+                         event=event) ~ pensize.3 + ESREAL3 + mobil + HousReg + strata(SEXO),
                     data=retire.A)
 
 # Adding contextual variables
 cox.c <- coxph(Surv(time=entry.age,
                          time2=exit.age,
-                         event=event) ~ pensize + ESREAL5 + mobil + HousReg +  #DIS + 
+                         event=event) ~ pensize.3 + ESREAL3 + mobil + HousReg + start.date + #DIS + 
                                         FNAC + civil.status + hh + strata(SEXO),
                     data=retire.A)
 # model comparison
-anova(cox.a, cox.b)   ## LR CHisq (df=5) = 931.47 ***
-anova(cox.b, cox.c)   ## LR CHisq (df=6) = 316.37 ***
+anova(cox.a, cox.b)   ## LR CHisq (df=4) = 993.11 ***
+anova(cox.b, cox.c)   ## LR CHisq (df=7) = 1055.5 ***
 
 rm(cox.a, cox.b, cox.c)
 
@@ -182,76 +146,67 @@ cox.male.a.a <- coxph(Surv(time=entry.age,
                     data=subset(retire.A, SEXO=="male"))
 
 # Model with 3 categories
-cox.male.a.b <- coxph(Surv(time=entry.age.r,
+cox.male.a.b <- coxph(Surv(time=entry.age,
                          time2=exit.age,
                          event=event) ~ pensize.3,
                     data=subset(retire.A, SEXO=="male"))
 
 # Income as continuous measure
-cox.male.a.c <- coxph(Surv(time=entry.age.r,
+cox.male.a.c <- coxph(Surv(time=entry.age,
                            time2=exit.age,
                            event=event) ~ INCOME,
-                      data=subset(retire, SEXO=="male"))
+                      data=subset(retire.A, SEXO=="male"))
 
 # LOG Income as continuous measure
-cox.male.a.d <- coxph(Surv(time=entry.age.r,
+cox.male.a.d <- coxph(Surv(time=entry.age,
                            time2=exit.age,
                            event=event) ~ log(INCOME),
-                      data=subset(retire, SEXO=="male"))
+                      data=subset(retire.A, SEXO=="male"))
 
 
 # LR tests
 
 anova(cox.male.a.a, cox.male.a.b)   ## LR CHisq (df=2) = 96.6 ***
-anova(cox.male.a.a, cox.male.a.b)   ## LR CHisq (df=2) = 96.6 ***
-anova(cox.male.a.a, cox.male.a.c)   ## LR CHisq (df=2) = 102.34 ***
-anova(cox.male.a.b, cox.male.a.c)   ## LR CHisq (df=0) = 5.7209 ***  ### simple LR Test prefers this model!
+anova(cox.male.a.b, cox.male.a.c)   ## LR CHisq (df=1) = 32.747 ***
+anova(cox.male.a.b, cox.male.a.d)   ## LR CHisq (df=0) = 4.277 ***  ### simple LR Test prefers model cox.male.a.d (LOG income)!
 
 ### For discussion on income measures i.e.: https://onlinelibrary.wiley.com/doi/full/10.1111/j.1468-0084.2008.00531.x 
-
-
-# FULL Model (contextual and other ses variables)
-cox.male.c <- coxph(Surv(time=entry.age.r,
-                         time2=exit.age,
-                         event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                                        FNAC + DIS + civil.status + hh,
-                    data=subset(retire, SEXO=="male"))
 
 
 ## female population
 ## ---------------
 
 # Model with only income (3 cats)
-cox.female.a <- coxph(Surv(time=entry.age.r,
+cox.female.a <- coxph(Surv(time=entry.age,
                            time2=exit.age,
                            event=event) ~ pensize.3,
-                      data=subset(retire, SEXO=="female"))
+                      data=subset(retire.A, SEXO=="female"))
   
 # Model with only income (4 cats)
-cox.female.b <- coxph(Surv(time=entry.age.r,
+cox.female.b <- coxph(Surv(time=entry.age,
                              time2=exit.age,
                              event=event) ~ pensize,
-                        data=subset(retire, SEXO=="female"))
+                        data=subset(retire.A, SEXO=="female"))
 
 # Income as continuous measure
-cox.female.c <- coxph(Surv(time=entry.age.r,
+cox.female.c <- coxph(Surv(time=entry.age,
                            time2=exit.age,
                            event=event) ~ INCOME,
-                      data=subset(retire, SEXO=="female"))
+                      data=subset(retire.A, SEXO=="female"))
 
 # LOG Income as continuous measure
-cox.female.d <- coxph(Surv(time=entry.age.r,
+cox.female.d <- coxph(Surv(time=entry.age,
                            time2=exit.age,
                            event=event) ~ log(INCOME),
-                      data=subset(retire, SEXO=="female"))
+                      data=subset(retire.A, SEXO=="female"))
 
 
 ### Model testing for females
 
 ## LRT
-anova(cox.female.a, cox.female.b)   ## LR CHisq (df=1) = 16.635 *** (model a with 4 cats)
-anova(cox.female.a, cox.female.c)   ## LR CHisq (df=2) = 2.3786
-anova(cox.female.a, cox.female.d)   ## LR CHisq (df=1) = 7.0205 ** (model d with log income)
+anova(cox.female.a, cox.female.b)   ## LR CHisq (df=1) = 9.2999 *** (model a with 4 cats)
+anova(cox.female.b, cox.female.c)   ## LR CHisq (df=2) = 0.02378 * (INCOME)
+anova(cox.female.c, cox.female.d)   ## LR CHisq (df=0) = 3.2953 *** (model d with log income)
 
 ## AIC
 AIC <- matrix(ncol = 2, nrow = 4)
@@ -272,63 +227,63 @@ AIC[order(AIC$AIC),]
 ### ---------------------
 
 ## Males (4 cats)
-cox.male.fa <- coxph(Surv(time=entry.age.r,
+cox.male.fa <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                          FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="male"))
+                          FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="male"))
 ## Males (3 cats)
-cox.male.fb <- coxph(Surv(time=entry.age.r,
+cox.male.fb <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="male"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="male"))
 ## Males (continuous)
-cox.male.fc <- coxph(Surv(time=entry.age.r,
+cox.male.fc <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ INCOME + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="male"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="male"))
 ## Males (log)
-cox.male.fd <- coxph(Surv(time=entry.age.r,
+cox.male.fd <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ log(INCOME) + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="male"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="male"))
 
-anova(cox.male.fa, cox.male.fb) # LR Chisquare 44.686  (df=1) *** (model fb with 3 categories)
-anova(cox.male.fb, cox.male.fc) # LR Chisquare 83.117  (df=1) *** (model fc with continuous income)
-anova(cox.male.fc, cox.male.fd) # LR Chisquare 0.7254  (df=0) *** (model fd with log income)
+anova(cox.male.fa, cox.male.fb) # LR Chisquare 130.14  (df=1) *** (model fb with 3 categories)
+anova(cox.male.fb, cox.male.fc) # LR Chisquare 151.55  (df=1) *** (model fc with continuous income)
+anova(cox.male.fc, cox.male.fd) # LR Chisquare 0.7189  (df=0) *** (model fd with log income)        !!!
 
 
 ## Females (4 cats)
-cox.female.fa <- coxph(Surv(time=entry.age.r,
+cox.female.fa <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="female"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="female"))
 ## Females (3 cats)
-cox.female.fb <- coxph(Surv(time=entry.age.r,
+cox.female.fb <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ pensize.3 + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="female"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="female"))
 ## Females (continuous)
-cox.female.fc <- coxph(Surv(time=entry.age.r,
+cox.female.fc <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ INCOME + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="female"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="female"))
 ## Females (log)
-cox.female.fd <- coxph(Surv(time=entry.age.r,
+cox.female.fd <- coxph(Surv(time=entry.age,
                           time2=exit.age,
                           event=event) ~ log(INCOME) + ESREAL5 + mobil + HousReg + 
-                       FNAC + DIS + civil.status + hh,
-                     data=subset(retire, SEXO=="female"))
+                       FNAC + age.ret + civil.status + hh,
+                     data=subset(retire.A, SEXO=="female"))
 
-anova(cox.female.fa, cox.female.fb) # LR Chisquare 40.024 (df=1) *** (model fb with 3 categories)
-anova(cox.female.fb, cox.female.fc) # LR Chisquare 38.817  (df=1) *** (model fc with continuous income)
-anova(cox.female.fc, cox.female.fd) # LR Chisquare 11.99  (df=0) *** (model fd with log income) !!!
+anova(cox.female.fa, cox.female.fb) # LR Chisquare 7.724 (df=1) ** (model fb with 3 categories)
+anova(cox.female.fb, cox.female.fc) # LR Chisquare 9.07  (df=1) ** (model fc with continuous income)
+anova(cox.female.fc, cox.female.fd) # LR Chisquare 0.3681  (df=0) *** (model fd with log income) !!!
 
 
 
@@ -339,8 +294,8 @@ anova(cox.female.fc, cox.female.fd) # LR Chisquare 11.99  (df=0) *** (model fd w
 
 ### Further model and assumption test
 
-mm <- cox.zph(cox.male.a)
-ff <- cox.zph(cox.female.b)
+mm <- cox.zph(cox.male.fd)
+ff <- cox.zph(cox.female.fd)
 
 # Proportional Hazards Assumption - pensionsize variables
 ggcoxzph(mm,resid=T, se=T, var=c(1:3), caption = "Schoenfeld Residuals by time",
@@ -348,12 +303,13 @@ ggcoxzph(mm,resid=T, se=T, var=c(1:3), caption = "Schoenfeld Residuals by time",
 # assumption is only hardly met by the group who receives 1000-1999 Euro per month
 
 # Proportional Hazards Assumption - rest
-ggcoxzph(mm,resid=T, se=T, var=c(4:13), caption = "Schoenfeld Residuals by time",
-         ggtheme = theme_minimal(),font.main = 12) 
+# ggcoxzph(mm,resid=T, se=T, var=c(4:13), caption = "Schoenfeld Residuals by time",
+#          ggtheme = theme_minimal(),font.main = 12) 
 # assumption is not met for the secondary and primary education group and the partner variable
 
 # residual check
-ggcoxdiagnostics(cox.male.a,type = "schoenfeld")
+ggcoxdiagnostics(cox.male.fd,type = "schoenfeld")
+ggcoxdiagnostics(cox.female.fd,type = "schoenfeld")
 
 ##--- female population   
 # Proportional Hazards Assumption
@@ -369,119 +325,7 @@ ggcoxzph(ff,resid=T, se=T, var = c(4:13), caption = "Schoenfeld Residuals by tim
 
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 ## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 
-
-### Testing possibly inverse effects of disability
-
-ret.sin.dis <- retire %>% filter(DIS==0)
-ret.con.dis <- retire %>% filter(DIS==1)
-
-# see graphically if there are substantial differences
-retire %>% ggplot(aes(x=pensize,fill=as.factor(event))) +
-  geom_bar(stat = "count") +
-  facet_grid(.~ DIS)+
-  scale_fill_discrete(name = "") # at least visually there are more people with high disability rents and higher risk
-
-round(prop.table(table(retire$pensize[retire$DIS==0],retire$event[retire$DIS==0]),2),3)
-
-round(prop.table(table(retire$pensize[retire$DIS==1],retire$event[retire$DIS==1]),2),3)
-
-## biggest difference in the group 1000-1999 € per month (more people in general in that group)
-## NO indication of a flipped gradient!!!
-
-# percentage disabled
-nrow(ret.con.dis)/nrow(retire) # 25% of all individuals
-
-## Sin
-## ---
-cox.male.sd <- coxph(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                         FNAC + civil.status + hh,
-                       data=subset(ret.sin.dis, SEXO=="male"))                   ### For men more significant results
-
-
-cox.female.sd <- coxph(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                            FNAC + civil.status + hh,
-                       data=subset(ret.sin.dis, SEXO=="female"))                 ### For women still not conclusive
-
-
-Gomp.sd <- flexsurvreg(Surv(time=entry.age.r,
-                                 time2=exit.age,
-                                 event=event) ~ pensize + SEXO + ESREAL5 + mobil + HousReg + 
-                                 civil.status + hh, data = ret.sin.dis,
-                              dist = "gompertz")
-
-## Con
-## ---
-
-cox.male.cd <- coxph(Surv(time=entry.age.r,
-                          time2=exit.age,
-                          event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                       FNAC + civil.status + hh,
-                     data=subset(ret.con.dis, SEXO=="male"))                  ###  complete inconclusive (insign.)
-
-
-cox.female.cd <- coxph(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ pensize + ESREAL5 + mobil + HousReg + 
-                            FNAC + civil.status + hh,
-                       data=subset(ret.con.dis, SEXO=="female"))               ### for women the inverse 
-                                                                               ### relationship seems to hold
-
-Gomp.cd <- flexsurvreg(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ pensize + SEXO + ESREAL5 + mobil + HousReg + 
-                            civil.status + hh, data = ret.con.dis,
-                       dist = "gompertz")
-
-### Now for the couple data
-coup.sin.dis <- pen.coupl %>% filter(DIS==0)
-coup.con.dis <- pen.coupl %>% filter(DIS==1)
-
-# see graphically if there are substantial differences
-pen.coupl %>% ggplot(aes(x=HHINC.4,fill=as.factor(event))) +
-  geom_bar(stat = "count") +
-  facet_grid(.~ DIS)+
-  scale_fill_discrete(name = "")
-
-
-round(prop.table(table(pen.coupl$pensize[pen.coupl$DIS==0],pen.coupl$event[pen.coupl$DIS==0]),2),3)
-
-round(prop.table(table(pen.coupl$pensize[pen.coupl$DIS==1],pen.coupl$event[pen.coupl$DIS==1]),2),3)
-
-## Same as for the full data set - but same conclusion: No sign of a flipped gradient
-
-
-## Sin
-## ---
-cox.male.sd <- coxph(Surv(time=entry.age.r,
-                          time2=exit.age,
-                          event=event) ~ HHINC.4 + ESREAL5 + mobil  +  HousReg +
-                       DIS_p + ESREAL5_p + hijo + bw,
-                     data=subset(coup.sin.dis, SEXO=="male"))                   ### low income groups strong disadv
-
-
-cox.female.sd <- coxph(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ HHINC.4 + ESREAL5 + mobil  +  HousReg +
-                            DIS_p + ESREAL5_p + hijo + bw,
-                       data=subset(coup.sin.dis, SEXO=="female"))               ### For women still not conclusive!
-
-GOMP.log <- flexsurvreg(Surv(time=entry.age.r,
-                             time2=exit.age,
-                             event=event) ~ log(hhincome) + SEXO + ESREAL5 + mobil + HousReg +  p.surv +
-                          log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = coup.sin.dis,
-                        dist = "gompertz")
-
-
-
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
 
 
 ### 5. Comparison with parametric survival models
@@ -492,9 +336,9 @@ GOMP.log <- flexsurvreg(Surv(time=entry.age.r,
 AIC <- matrix(ncol = 2, nrow = 3)
 
 # exponential
-model.1 <- flexsurvreg(Surv(time=retire$entry.age.r,
-                          time2=retire$exit.age,
-                          event=retire$event) ~ 1, dist = "exp")
+model.1 <- flexsurvreg(Surv(time=retire.A$entry.age,
+                          time2=retire.A$exit.age,
+                          event=retire.A$event) ~ 1, dist = "exp")
 
 AIC[1,2] <- AIC(model.1)
 
@@ -506,9 +350,9 @@ AIC[1,2] <- AIC(model.1)
 # AIC[2,2] <- AIC(model.2)
 
 # lognormal
-model.3 <- flexsurvreg(Surv(time=retire$entry.age.r,
-                            time2=retire$exit.age,
-                            event=retire$event) ~ 1, dist = "lnorm")
+model.3 <- flexsurvreg(Surv(time=retire.A$entry.age,
+                            time2=retire.A$exit.age,
+                            event=retire.A$event) ~ 1, dist = "lnorm")
 
 AIC[2,2] <- AIC(model.3)
 
@@ -520,9 +364,9 @@ AIC[2,2] <- AIC(model.3)
 # AIC[4,2] <- AIC(model.4)
 
 # Gompertz
-model.5 <- flexsurvreg(Surv(time=retire$entry.age.r,
-                            time2=retire$exit.age,
-                            event=retire$event) ~ 1, dist = "gompertz")
+model.5 <- flexsurvreg(Surv(time=retire.A$entry.age,
+                            time2=retire.A$exit.age,
+                            event=retire.A$event) ~ 1, dist = "gompertz")
 
 AIC[3,2] <- AIC(model.5)
 
@@ -554,19 +398,19 @@ legend("topright",legend=c("KM Plot","Fitted"),
 # from the paper on the flexsurv package
 # https://cran.r-project.org/web/packages/flexsurv/vignettes/flexsurv.pdf
 
-median.Gompertz <- function(shape, rate) {
-  qgompertz(0.5, shape = shape, rate = rate)
-}
-summary(model.5, fn = median.Gompertz, t = 1, B = 10000)
+    # median.Gompertz <- function(shape, rate) {
+    #   qgompertz(0.5, shape = shape, rate = rate)
+    # }
+    # summary(model.5, fn = median.Gompertz, t = 1, B = 10000)
 
 
 ### Compare Cox with Parametric model with income (categorical) as only covariates (male)
 ### --------------------------------------------------------------------------------------
 
 # 1 a) men (individual, only income (cat.), COX)
-cox.male.1 <- coxph(Surv(time=entry.age.r,
+cox.male.1 <- coxph(Surv(time=entry.age,
                           time2=exit.age,
-                          event=event) ~ pensize.3,data=subset(retire, SEXO=="male"))
+                          event=event) ~ pensize.3,data=subset(retire.A, SEXO=="male"))
 
 summary(cox.male.1)
 
@@ -580,9 +424,9 @@ summary(cox.male.1)
 # -----------------------------------------------                
 # 1 b) men (individual, only income (cat.), Gomp)
 # -----------------------------------------------
-Gomp.male.1 <- flexsurvreg(Surv(time=entry.age.r,
+Gomp.male.1 <- flexsurvreg(Surv(time=entry.age,
                                  time2=exit.age,
-                                 event=event) ~ pensize.3, data = subset(retire, SEXO="male"),
+                                 event=event) ~ pensize.3, data = subset(retire.A, SEXO="male"),
                             dist = "gompertz")
 
 ### AIC
@@ -591,7 +435,7 @@ AIC(cox.male.1)
 AIC(Gomp.male.1)
 
 # comparing the models visually
-inc_df <- with(retire,
+inc_df <- with(retire.A,
                data.frame(pensize.3 = c("less than 600 Euro", "600-1199 Euro", "more than 1200 Euro")))
 
 pred.cox.g <- survfit(cox.male.1, newdata = inc_df)
@@ -678,8 +522,6 @@ comp.plot %>% ggplot() +
 
 Cox.SURVFIT <- survfit(cox.male.1)
 
-##########################################################################################
-
 # Proportion that fail at each evaluated time period  ##
 
 Cox.SURVFIT.PROP.FAIL <-
@@ -758,19 +600,19 @@ AIC(Gomp.male.3b)
 
 ### %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ###
 
-pm0 <- flexsurvreg(Surv(time=entry.age.r,
+pm0 <- flexsurvreg(Surv(time=entry.age,
                         time2=exit.age,
-                        event=event) ~ 1, data = subset(retire, SEXO="male"),
+                        event=event) ~ 1, data = subset(retire.A, SEXO="male"),
                    dist = "gompertz")
 
-pm1 <- flexsurvreg(Surv(time=entry.age.r,
+pm1 <- flexsurvreg(Surv(time=entry.age,
                         time2=exit.age,
-                        event=event) ~ pensize, data = subset(retire, SEXO="male"),
+                        event=event) ~ pensize, data = subset(retire.A, SEXO="male"),
                    dist = "gompertz")
 
-pm2 <- flexsurvreg(Surv(time=entry.age.r,
+pm2 <- flexsurvreg(Surv(time=entry.age,
                         time2=exit.age,
-                        event=event) ~ INCOME, data = subset(retire, SEXO="male"),
+                        event=event) ~ INCOME, data = subset(retire.A, SEXO="male"),
                    dist = "gompertz")
 
 
@@ -785,9 +627,9 @@ pm2 <- flexsurvreg(Surv(time=entry.age.r,
 
 # predicted survival curves from Cox model without covariates
 
-pred.cox <- survfit(Surv(time=entry.age.r,
+pred.cox <- survfit(Surv(time=entry.age,
                          time2=exit.age,
-                         event=event) ~ 1, data = subset(retire, SEXO="male"))
+                         event=event) ~ 1, data = subset(retire.A, SEXO="male"))
 
 plot(x=pred.cox$time, y=pred.cox$surv, type="l",lty = 1, lwd = 1)
 
@@ -798,9 +640,9 @@ lines(pm0, type = "survival",lty = 1, lwd = 1, col.ci = NULL)
 
 #### 2. Models with income as categorical variable (individual data, males)
 
-pred.cox.inc <- survfit(Surv(time=entry.age.r,
+pred.cox.inc <- survfit(Surv(time=entry.age,
                              time2=exit.age,
-                             event=event) ~ pensize.3 , data = subset(retire, SEXO="male"))
+                             event=event) ~ pensize.3 , data = subset(retire.A, SEXO="male"))
 pci <- tidy(pred.cox.inc)
 
 
@@ -826,254 +668,3 @@ plot(x=pred.cox.inc$time, y=pred.cox.inc$surv, col=pred.cox.inc$strata, type="l"
 
 # adding fitted values for the Gompertz
 lines(pm1, type = "survival",lty = 2, lwd = 1)
-
-
-
-
-
-
-
-# # Different way
-#
-#   Cox.cat.plot <- ggsurvplot(survfit(cox.male.3a, data = subset(retire, SEXO="male")), palette = "Dark2", break.time.by=5, xlim=c(65, 100),
-#   ggtheme = theme_minimal())
-# 
-# Cox.cat.plot
-
-# library(ggfortify)
-# 
-# CMS <- survfit(coxph(Surv(time=entry.age.r,
-#            time2=exit.age,
-#            event=event) ~ pensize.3,
-#       data=subset(retire, SEXO=="male")))
-# 
-# Cox.Pl.sin <- autoplot(CMS, surv.linetype = 'dashed', surv.colour = 'blue',
-#          conf.int.fill = 'dodgerblue3', conf.int.alpha = 0.5, censor = FALSE)
-
-
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-## $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ##
-
-
-#### PARTNER DATA 
-
-
-load("041_RETPART.RData")
-
-
-# compare income with log(income)
-# https://onlinelibrary.wiley.com/doi/full/10.1111/j.1468-0084.2008.00531.x
-
-par(mfrow=c(1,2))  
-hist(pen.coupl$hhincome)
-hist(log(pen.coupl$hhincome))
-par(mfrow=c(1,1)) 
-
-
-
-
-## Wealth Variables + Direct Variables (Disability or death of the partner not included)
-
-## A) 3 categories
-COX.MALE.A <- coxph(Surv(time = entry.age.r,
-                         time2 = exit.age,
-                         event = event)~ HHINC.3, 
-                    data = subset(pen.coupl,SEXO=="male"))
-
-
-## B) 4 categories
-COX.MALE.B <- coxph(Surv(time = entry.age.r,
-                         time2 = exit.age,
-                         event = event)~ HHINC.4, 
-                    data = subset(pen.coupl,SEXO=="male"))
-
-
-## C) Full model with log income
-COX.MALE.C <- coxph(Surv(time = entry.age.r,
-                           time2 = exit.age,
-                           event = event)~ log(hhincome), 
-                      data = subset(pen.coupl,SEXO=="male"))
-
-### Model comparison
-AIC(COX.MALE.A)    # 358492.1
-AIC(COX.MALE.B)    # 358493
-AIC(COX.MALE.C)    # 358469.2
-
-anova(COX.MALE.A,COX.MALE.B) # NO significant differences
-anova(COX.MALE.A,COX.MALE.C) # Model with log income is preferable
-
-## -------------------------------------------------------------------- ##
-# Now get baseline curve
-baseline <- basehaz(COX.MALE.C)
-# Draw baseline hazard
-plot(baseline$time, baseline$hazard, type='l',main="Hazard rates")
-# Draw disabled peoples hazard (i.e.) -  multiplicative to the baseline (coefficients)
-lines(baseline$time, exp(-0.6238)*baseline$hazard, col="blue")
-legend("topleft",legend=c("baseline","income effect"), 
-       lty=c(1,1),col=c("black","blue"), cex=0.75)
-## -------------------------------------------------------------------- ## 
-
-
-
-
-### ----------------------
-### Just income - Gompertz
-### ----------------------
-
-## 1) 3 categories
-GOMP.INC.A <- flexsurvreg(Surv(time=entry.age.r,
-                                time2=exit.age,
-                                event=event) ~ HHINC.3, data = pen.coupl,
-                           dist = "gompertz")
-
-## 1b) 4 categories
-GOMP.INC.B <-flexsurvreg(Surv(time=entry.age.r,
-                               time2=exit.age,
-                               event=event) ~ HHINC.4, data = pen.coupl,
-                          dist = "gompertz")
-
-## 2) Log Income 
-GOMP.INC.C <- flexsurvreg(Surv(time=entry.age.r,
-                                time2=exit.age,
-                                event=event) ~ log(hhincome), data = pen.coupl,
-                           dist = "gompertz")
-
-
-# AIC model test
-
-AIC <- matrix(ncol = 2, nrow = 3)
-
-AIC[1,2] <- AIC(GOMP.INC.A)
-AIC[2,2] <- AIC(GOMP.INC.B)
-AIC[3,2] <- AIC(GOMP.INC.C)
-Income <- c("3 categories", "4 categories","log income")
-colnames(AIC) <- c("Distribution", "AIC")
-AIC <- transform(AIC, Distribution = as.character(Income), 
-                 AIC = as.factor(AIC))
-#### clean up AIC
-AIC$AIC <- as.numeric(levels(AIC$AIC)[AIC$AIC])
-AIC[order(AIC$AIC),]                                     ### Log income as preferable
-
-
-# survival curve
-plot(GOMP.INC.C, xlim=c(65,100))
-legend("topright",legend=c("KME","Gompertz Curve"), 
-       lty=c(1,1),col=c("black","red"), cex=0.75)
-
-
-##### ------------------------------------------------------------------------------------------------ #####
-##### ------------------------------------------------------------------------------------------------ #####
-##### ------------------------------------------------------------------------------------------------ #####
-
-
-#### 1) Parametric survival model with log(income)  - there seem to be some kind of problem with the log income
-
-### ----------------
-### Male population
-### ----------------
-GOMP.MALE.A <- flexsurvreg(Surv(time=entry.age.r,
-                                  time2=exit.age,
-                                  event=event) ~ log(hhincome) + ESREAL5 + mobil  +  HousReg +  event_p + DIS + log(FNAC) +
-                               DIS_p + ESREAL5_p + hijo + bw, data = subset(pen.coupl, SEXO="male"),
-                             dist = "gompertz")
-
-GOMP.MALE.A
-
-### ------------------
-### Female population
-### ------------------
-
-GOMP.FEMALE.A <- flexsurvreg(Surv(time=entry.age.r,
-                                time2=exit.age,
-                                event=event) ~ log(hhincome) + ESREAL5 + mobil  +  HousReg +  event_p + DIS + log(FNAC) +
-                             DIS_p + ESREAL5_p + hijo + bw, data = subset(pen.coupl, SEXO="female"),
-                           dist = "gompertz")
-
-GOMP.FEMALE.A
-
-### Same shape and rate for both sexes
-
-
-
-
-## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-## 3a) Full Model with categories
-## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-### !!!!!! Without p.surv
-
-# log income
-# ----------
-GOMP.log <- flexsurvreg(Surv(time=entry.age.r,
-                             time2=exit.age,
-                             event=event) ~ log(hhincome) + SEXO + ESREAL5 + mobil + HousReg + DIS + event_p +
-                          log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl,
-                        dist = "gompertz")
-
-GOMP.log
-
-# 4 categories
-# -------------
-GOMP.c4 <- flexsurvreg(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ HHINC.4 + SEXO + ESREAL5 + mobil + HousReg + DIS + event_p +
-                            log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl,
-                       dist = "gompertz")
-
-GOMP.c4
-
-# 3 categories
-# -------------
-
-GOMP.c3 <- flexsurvreg(Surv(time=entry.age.r,
-                            time2=exit.age,
-                            event=event) ~ HHINC.3 + SEXO + ESREAL5 + mobil + HousReg + DIS + event_p +
-                            log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl,
-                       dist = "gompertz")
-
-GOMP.c3
-
-# AIC model test
-
-AIC <- matrix(ncol = 2, nrow = 3)
-
-AIC[1,2] <- AIC(GOMP.c3)
-AIC[2,2] <- AIC(GOMP.c4)
-AIC[3,2] <- AIC(GOMP.log)
-
-Income <- c("3 categories", "4 categories", "log income")
-colnames(AIC) <- c("Distribution", "AIC")
-AIC <- transform(AIC, Distribution = as.character(Income), 
-                 AIC = as.factor(AIC))
-#### clean up AIC
-AIC$AIC <- as.numeric(levels(AIC$AIC)[AIC$AIC])
-AIC[order(AIC$AIC),]                                        ## 3 categories! seems to be the best fitting model
-
-
-# survival curve - 3 cats
-par(mfrow=c(1,2))
-plot(GOMP.c3, xlim=c(65,100), main="3 categories")
-legend("topright",legend=c("KME","Gompertz Curve"), 
-       lty=c(1,1),col=c("black","red"), cex=0.75)
-plot(GOMP.log, xlim=c(65,100), main="log income")
-legend("topright",legend=c("KME","Gompertz Curve"), 
-       lty=c(1,1),col=c("black","red"), cex=0.75)
-par(mfrow=c(1,1))
-
-### Once more compare to the Cox model
-
-## C) Full model with log income
-COX.ULTIMO <- coxph(Surv(time = entry.age.r,
-                         time2 = exit.age,
-                         event = event)~ HHINC.3 + SEXO + ESREAL5 + mobil + HousReg + event_p + DIS +
-                      log(FNAC) + DIS_p + ESREAL5_p + hijo + bw, data = pen.coupl)
-
-AIC(COX.ULTIMO)
-# 524697
-AIC(GOMP.c3)
-# 209614.5

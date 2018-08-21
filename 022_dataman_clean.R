@@ -72,17 +72,16 @@ hist(sscc$start.date_Disability[sscc$start.date_Disability<1950])
 ## There are 76 individuals with impossible start dates regarding their age in 2011 - !Excluded from the analysis
 
 sscc <- sscc %>% dplyr::mutate(ff = ifelse(!is.na(start.date_Disability) & start.date_Disability<1916,1,0)) %>% 
-  filter(ff==0) %>% select(-ff) # 1420848 individuals left
+  filter(ff==0) %>% dplyr::select(-ff) # 1420848 individuals left
 
 ## ---------- ##
 ## Retirement
 
 summary(sscc$start.date_Retirement)
-# Minimum age at retirement = 1965 - oldest individuals reached age 65 in 1981
 sscc %>% dplyr::mutate(tt = ifelse(start.date_Retirement<1981,TRUE,FALSE)) %>% dplyr::count(tt)
-# 2753 individuals of the oldest cohort in 2011 have retired "early"
+# 2753 individuals of the oldest cohort in 2011 have retired "earlier"
 
-# count the disabled individuals who had worked and who did not
+# Part of the disabled population who has not worked
 as.data.table(sscc) -> sscc
 dcast(sscc[,.N,.(Retire=income_Retirement>0,Disability=income_Disability>0)], Retire~Disability)
 sscc[,.N,.(Retire=income_Retirement>0,Disability=income_Disability>0)]
@@ -293,8 +292,22 @@ summary(retire$contrib.years_Retirement)
  #                                       "more than 40 years"))))
  
 
- # EDUCATION           
- # ---------
+# Year/Age when retirement starts           
+# -------------------------------
+summary(retire$start.date_Retirement)
+
+# age at entering retirement
+retire %>% dplyr::mutate(tt = ifelse(start.date_Retirement - FNAC <45 & income_Retirement!=0,T,F)) %>% dplyr::count(tt)
+# 61 individuals retire before 45 - exclude!
+
+# build variable
+retire <- retire %>% mutate(age.ret = start.date_Retirement - FNAC) %>% filter(age.ret>=45)
+ 
+summary(retire$age.ret)
+
+
+# EDUCATION           
+# ---------
  
 table(retire$ESREAL5)
  ## collapse categories incomplete and illiterate
@@ -318,7 +331,7 @@ round(prop.table(table(retire$ESREAL3)), digits = 2)
 table(retire$cohab2002)
 table(retire$ECIVIL)
 table(retire$cohab2011)
-table(retire$ECIVIL,retire$cohab2002) # widowed within observation
+table(retire$ECIVIL,retire$cohab2011) # widowed within observation
 
 ### Create a variable with the widowhood information from 2001 + 2011 and the cohabitation
 
@@ -372,7 +385,7 @@ retire[,.(kID, FNAC, SEXO, ECIVIL, civil.status, ESREAL, ESREAL5, ESREAL3,
           start.date_Disability, start.date_Retirement, start.date_Widowhood, 
           end.date_Disability, end.date_Retirement, end.date_Widowhood, data.out, 
           entry.age.r, entry.age.d, entry.age.w, type.pen,  entry.age,  exit.age,  age2011, 
-          end.cause, end.cause2, cause, 
+          end.cause, end.cause2, cause, age.ret,
           kIDcon, FViudedad, cohab2002, cohab2011, 
           DIS, event, 
           INCOME, INC.CW, pensize, pensize.3, pensize.CW
@@ -400,7 +413,7 @@ retire[ ( start.date_Retirement<2011 & age2011 >=65 & ( is.na(start.date_Disabil
           INCOME =  income_Retirement,  pensize, pensize.3,
           years.start.follow=  years.start.follow_Retirement,
           start.date =  start.date_Retirement, start.date_Disability, 
-          end.date= end.date_Retirement,  data.out, 
+          end.date= end.date_Retirement,  data.out, age.ret,
           # type.pen, 
           entry.age,  exit.age, 
           end.cause, end.cause2, cause, 
@@ -410,7 +423,7 @@ retire[ ( start.date_Retirement<2011 & age2011 >=65 & ( is.na(start.date_Disabil
           DIS, event)
         ] -> retire.A
 
-## 554295 individuals
+## 554276 individuals
 # retire.A[entry.age<65 & (data.out-FNAC) < 65 ] -> pp ; length(pp$kID)
 # retire.A[(!is.na(start.date_Disability)) |  (!is.na(start.date_Widowhood)),] ->  pp
 # pp[,.N, .(D=!is.na(start.date_Disability), W=  !is.na(start.date_Widowhood))]
@@ -436,6 +449,7 @@ retire.A[entry.age < exit.age] -> retire.A
 
 # changes in the event variable
 retire.A <- retire.A %>% mutate(event = ifelse(end.cause2=="C",0,1))
+prop.table(table(retire.A$event))
 
 ##### 7 - Save prepared data set
   
