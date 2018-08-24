@@ -5,7 +5,7 @@
 rm(list = ls())
 
 ### 0.1 Load data set
- load("010_sscc.RData")
+ # load("010_sscc.RData")
 
 #load("data/025_INDMOR-CT.RData")
 #load("../TesisMathias/DatosRegistroAndalucia/IO/exploratory.analysis/010_sscc.RData")
@@ -16,6 +16,10 @@ rm(list = ls())
 ## 1420924 observations = pension spells of any kind (retirement, disability, widowhood)
 ## Oldest individual 113, the youngest 9
 
+load("datosandalucia/010_ma.RData")
+load("datosandalucia/010_sma.RData")
+
+
 ## 0.2 Usefull packages
 library(reshape)
 library(plyr)                   
@@ -24,6 +28,14 @@ library(survival)
 library(forcats)
 library(data.table)
 library(broom)
+
+
+## Check for re-entries (probably return migrants - padron based (?))
+sum(ma$id %in% unique(sma$id)) # 
+setdiff(unique(sma$id),ma$id)  # 0 differences
+
+
+
 
 ## 1. Extract in utero cohorts 08/1918 - 10/1920 (in 2001 between 83 and 86 and in 2011 between 93 and 96)
 ## ----------------------------------------------------------------------------------------------------
@@ -100,6 +112,40 @@ kme.tot
 
 
 # By cohort
+
+# Proportion of survivors at census 2001 for pre-flu, flu, post-flu cohorts
+# - old= 1920 / 5-9 years , flu.c= 1920 / 0-4 years, young= 1930 / 5-9 years
+
+pop.and <- read.csv("PopAndalusia19001930.csv",header = T, sep = ";")
+class(pop.and)
+pop.and <- data.table(pop.and)
+
+      # dcast(pop.and[,.N,keyby=.(sex, agegr)], agegr~sex)
+      # pop.and[,.N,.(AGE=agegr=="0 to 4",SEX=sex=="male")]
+
+# 1920 - flu.c
+# ------------
+# male: 231.483  female: 226.155
+
+# 1920 - older
+# ------------
+# male: 237.612  female: 229.062
+
+# 1930 - younger
+# ------------
+# male: 270.269  female: 259.153
+
+# proportion alive at the beginning of the study
+class(flufam.18)
+flufam.18 <- data.table(flufam.18)
+dcast(flufam.18[,.N,keyby=.(SEXO, flu.c)], flu.c~SEXO)
+
+#            Men Women  Prop. Men Prop.Women
+#    older  2562  7123    0.01078    0.03110
+#    flu.c  4252  9651    0.01837    0.04267
+#  younger 19927 37932    0.07373    0.14637
+
+
 
 # for starting at the same age 
 flufam.18 <- flufam.18 %>% dplyr::filter(exit.age >= 84)
